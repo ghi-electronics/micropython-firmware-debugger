@@ -1,0 +1,22 @@
+# Put the ESP-IDF console on the native USB CDC instead of UART0.
+#
+# Not for shipping builds -- this is the diagnostic to reach for when a board
+# will not boot and has no UART wired out. With the console on UART0 (the
+# default for ESP32_GENERIC_S2 and friends), a firmware that crashes before
+# USB comes up is completely silent: no port, no output, and unlike rp2 not
+# even a VID_0000 entry in Device Manager to inspect.
+#
+# Add it to a board temporarily:
+#
+#     list(APPEND SDKCONFIG_DEFAULTS boards/sdkconfig.usbconsole)
+#
+# then flash and read the port that appears. A boot loop prints its panic and
+# backtrace, which addr2line turns into function names:
+#
+#     xtensa-esp32s2-elf-addr2line -pfiaC -e build-<BOARD>/micropython.elf <addrs>
+#
+# This is what identified the IDF-version I2C driver conflict in 12.12, after a
+# dozen flash cycles of guessing against a silent board. Reach for it first.
+CONFIG_ESP_CONSOLE_USB_CDC=y
+CONFIG_ESP_CONSOLE_UART_DEFAULT=n
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y

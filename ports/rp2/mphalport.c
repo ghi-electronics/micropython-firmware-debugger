@@ -102,6 +102,11 @@ int mp_hal_stdin_rx_chr(void) {
 
 // Send string of given length
 mp_uint_t mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
+    // Mirror program output to the debug channel so print() reaches the Debug
+    // Console.  CDC 0 below is the REPL, which the debugger UI never shows.
+    // Empty unless a board enables the debugger; the same one line sits in
+    // ports/stm32/mphalport.c.
+    MICROPY_DEBUG_STDOUT_HOOK(str, len);
     mp_uint_t ret = len;
     bool did_write = false;
     #if MICROPY_HW_ENABLE_UART_REPL

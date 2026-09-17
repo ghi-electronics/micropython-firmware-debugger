@@ -144,6 +144,11 @@ set(MICROPY_SOURCE_LIB
     ${MICROPY_DIR}/shared/tinyusb/mp_usbd_cdc.c
     ${MICROPY_DIR}/shared/tinyusb/mp_usbd_descriptor.c
     ${MICROPY_DIR}/shared/tinyusb/mp_usbd_runtime.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug_break.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug_files.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug_vars.c
+    ${MICROPY_DIR}/shared/mpdebug/wireprotocol.c
 )
 
 if(PICO_ARM)
@@ -163,6 +168,7 @@ set(MICROPY_SOURCE_DRIVERS
 
 set(MICROPY_SOURCE_PORT
     clocks_extra.c
+    mpdebug_port.c
     datetime_patch.c
     fatfs_port.c
     help.c
@@ -195,6 +201,9 @@ set(MICROPY_SOURCE_QSTR
     ${MICROPY_DIR}/shared/runtime/mpirq.c
     ${MICROPY_DIR}/shared/runtime/sys_stdio_mphal.c
     ${MICROPY_DIR}/shared/tinyusb/mp_usbd_runtime.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug_files.c
+    ${MICROPY_DIR}/shared/mpdebug/mpdebug_vars.c
     ${MICROPY_PORT_DIR}/machine_adc.c
     ${MICROPY_PORT_DIR}/machine_i2c.c
     ${MICROPY_PORT_DIR}/machine_pin.c

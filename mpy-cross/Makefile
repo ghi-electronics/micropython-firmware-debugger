@@ -39,8 +39,22 @@ CC = clang
 # Use clang syntax for map file
 LDFLAGS_ARCH = -Wl,-map,$@.map -Wl,-dead_strip
 else
-# Use gcc syntax for map file
-LDFLAGS_ARCH = -Wl,-Map=$@.map,--cref -Wl,--gc-sections
+# Use gcc syntax for map file. --cref is dropped because lld (LLVM-MinGW's
+# linker) does not accept it. --gc-sections is enough on its own.
+LDFLAGS_ARCH = -Wl,-Map=$@.map -Wl,--gc-sections
+endif
+
+# LLVM-MinGW's clang (22+) crashes with an SCCP-pass codegen bug on the
+# inline-asm register-var reads in shared/runtime/gchelper_generic.c for the
+# x86_64 host target. mpy-cross is a host tool where GC-scan speed does not
+# matter, so fall back to the setjmp-based register capture, which sidesteps
+# the crash and matches what MICROPY_GCREGS_SETJMP=1 selects at compile time.
+COMPILER_TARGET_STR := $(shell $(CC) -dumpmachine)
+COMPILER_VERSION := $(shell $(CC) --version 2>/dev/null | grep -oE 'clang version [0-9]+' | head -1 | grep -oE '[0-9]+')
+ifneq (,$(findstring windows-gnu,$(COMPILER_TARGET_STR)))
+ifneq (,$(filter-out 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21,$(COMPILER_VERSION)))
+CFLAGS_EXTRA += -DMICROPY_GCREGS_SETJMP=1
+endif
 endif
 LDFLAGS += $(LDFLAGS_MOD) $(LDFLAGS_ARCH) -lm $(LDFLAGS_EXTRA)
 
@@ -50,9 +64,10 @@ SRC_C = \
 	gccollect.c \
 	shared/runtime/gchelper_generic.c \
 
-# Add fmode when compiling with mingw gcc
+# Add fmode when compiling with mingw gcc, or with LLVM-MinGW (clang-22+),
+# which reports "x86_64-w64-windows-gnu" instead of "*-mingw*".
 COMPILER_TARGET := $(shell $(CC) -dumpmachine)
-ifneq (,$(findstring mingw,$(COMPILER_TARGET)))
+ifneq (,$(or $(findstring mingw,$(COMPILER_TARGET)),$(findstring windows-gnu,$(COMPILER_TARGET))))
 	SRC_C += ports/windows/fmode.c
 endif
 

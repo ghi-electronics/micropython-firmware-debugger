@@ -351,6 +351,15 @@ void stm32_main(uint32_t reset_mode) {
     #endif
     #endif
 
+    // A caller that ran before us (a bootloader jumping here directly) may
+    // have left PRIMASK set -- the GHI SITCore bootloader does __disable_irq()
+    // right before handing control over. Without this, USB comes up but its
+    // IRQ never fires and the host reports "device not recognized". A normal
+    // CPU reset leaves PRIMASK clear, so on that path this call is a no-op.
+    // Deliberately after VTOR is set: if a pending IRQ was inherited, it
+    // will now route to our handlers rather than the loader's.
+    __enable_irq();
+
     #if __CORTEX_M != 33 && __CORTEX_M != 55
     // Enable 8-byte stack alignment for IRQ handlers, in accord with EABI
     SCB->CCR |= SCB_CCR_STKALIGN_Msk;
@@ -685,7 +694,13 @@ soft_reset:
     #if MICROPY_HW_STM_USB_STACK
     // init USB device to default setting if it was not already configured
     if (!(pyb_usb_flags & PYB_USB_FLAG_USB_MODE_CALLED)) {
-        #if MICROPY_HW_USB_MSC
+        #if defined(MICROPY_HW_USB_DEFAULT_MODE)
+        // Board-specified default, so a board that needs a particular USB
+        // layout gets it without depending on boot.py -- which a mass-erase
+        // reflash silently removes along with the rest of the filesystem.
+        const uint16_t pid = MICROPY_HW_USB_DEFAULT_PID;
+        const uint8_t mode = MICROPY_HW_USB_DEFAULT_MODE;
+        #elif MICROPY_HW_USB_MSC
         const uint16_t pid = MICROPY_HW_USB_PID_CDC_MSC;
         const uint8_t mode = USBD_MODE_CDC_MSC;
         #else

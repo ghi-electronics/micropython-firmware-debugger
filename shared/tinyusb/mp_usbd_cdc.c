@@ -76,10 +76,18 @@ uintptr_t mp_usbd_cdc_poll_interfaces(uintptr_t poll_flags) {
 void MICROPY_WRAP_TUD_CDC_RX_CB(tud_cdc_rx_cb)(uint8_t itf) {
     // consume pending USB data immediately to free usb buffer and keep the endpoint from stalling.
     // in case the ringbuffer is full, mark the CDC interface that need attention later on for polling
+    if (itf != 0) {
+        // Only CDC 0 carries stdio.  A further interface belongs to whoever claimed
+        // it -- draining it into the REPL ring buffer would steal its input.
+        return;
+    }
     cdc_itf_pending &= ~(1 << itf);
     for (uint32_t bytes_avail = tud_cdc_n_available(itf); bytes_avail > 0; --bytes_avail) {
         if (ringbuf_free(&stdin_ringbuf)) {
-            int data_char = tud_cdc_read_char();
+            // Read from the interface we were asked about: tud_cdc_read_char() is
+            // the interface-0 variant, which is only correct by accident when
+            // CFG_TUD_CDC is 1.
+            int data_char = tud_cdc_n_read_char(itf);
             #if MICROPY_KBD_EXCEPTION
             if (data_char == mp_interrupt_char) {
                 // Clear the ring buffer
@@ -195,17 +203,25 @@ void MICROPY_WRAP_TUD_CDC_LINE_STATE_CB(tud_cdc_line_state_cb)(uint8_t itf, bool
         tud_cdc_n_write_clear(itf);
     }
     #endif
+    // Both bootloader triggers below are scoped to CDC 0.  A host opening any other
+    // interface asserts DTR/RTS as a matter of course, and letting that reset the
+    // board would make an attached debugger look like random bootloader entry.
     #if MICROPY_HW_USB_CDC_DTR_RTS_BOOTLOADER
-    if (dtr && !rts) {
-        if (prev_line_state.rts && !prev_line_state.dtr) {
-            mp_sched_schedule_node(&mp_bootloader_sched_node, usbd_cdc_run_bootloader_task);
+    if (itf == 0) {
+        // The remembered state must track CDC 0 alone.  It is the history this
+        // edge detection reads, so letting another interface's DTR/RTS write it
+        // would make the pattern go unrecognised on the interface that matters.
+        if (dtr && !rts) {
+            if (prev_line_state.rts && !prev_line_state.dtr) {
+                mp_sched_schedule_node(&mp_bootloader_sched_node, usbd_cdc_run_bootloader_task);
+            }
         }
+        prev_line_state.rts = rts;
+        prev_line_state.dtr = dtr;
     }
-    prev_line_state.rts = rts;
-    prev_line_state.dtr = dtr;
     #endif
     #if MICROPY_HW_USB_CDC_1200BPS_TOUCH
-    if (dtr == false && rts == false) {
+    if (itf == 0 && dtr == false && rts == false) {
         // Device is disconnected.
         cdc_line_coding_t line_coding;
         tud_cdc_n_get_line_coding(itf, &line_coding);

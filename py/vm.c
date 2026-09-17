@@ -179,6 +179,7 @@
 #define TRACE_TICK(current_ip, current_sp, is_exception) do { \
     assert(code_state != code_state->prev_state); \
     assert(MP_STATE_THREAD(current_code_state) == code_state); \
+    MICROPY_DEBUG_INSTR_HOOK(code_state); \
     if (!mp_prof_is_executing && code_state->frame && MP_STATE_THREAD(prof_trace_callback)) { \
         MP_PROF_INSTR_DEBUG_PRINT(code_state->ip); \
     } \
@@ -1430,6 +1431,9 @@ exception_handler:
                 TRACE_TICK(code_state->ip, code_state->sp, true /* yes, it's an exception */);
             }
             #endif
+
+            // Still unwound nothing: the whole frame chain is intact here.
+            MICROPY_DEBUG_EXC_HOOK(code_state, nlr.ret_val);
 
 #if MICROPY_STACKLESS
 unwind_loop:

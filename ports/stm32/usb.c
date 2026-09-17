@@ -642,6 +642,15 @@ const pyb_usb_vcp_obj_t pyb_usb_vcp_obj[MICROPY_HW_USB_CDC_NUM] = {
     #endif
 };
 
+// Accessor so other translation units (e.g. the debug engine on CDC1) can reach
+// a CDC interface without usb_device having to become global.
+usbd_cdc_itf_t *usb_vcp_get_cdc_itf(int idx) {
+    if (idx < 0 || idx >= MICROPY_HW_USB_CDC_NUM) {
+        return NULL;
+    }
+    return &usb_device.usbd_cdc_itf[idx];
+}
+
 static bool pyb_usb_vcp_irq_scheduled[MICROPY_HW_USB_CDC_NUM];
 
 static void pyb_usb_vcp_init0(void) {

@@ -80,6 +80,7 @@ MP_WEAK int mp_hal_stdin_rx_chr(void) {
 }
 
 MP_WEAK mp_uint_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
+    MICROPY_DEBUG_STDOUT_HOOK(str, len);
     mp_uint_t ret = len;
     bool did_write = false;
     if (MP_STATE_PORT(pyb_stdio_uart) != NULL) {

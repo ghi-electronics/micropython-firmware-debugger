@@ -194,6 +194,11 @@ MPY_CROSS_FLAGS += -march=$(MPY_CROSS_MCU_ARCH)
 
 SHARED_SRC_C += $(addprefix shared/,\
 	libc/string0.c \
+	mpdebug/mpdebug.c \
+	mpdebug/mpdebug_break.c \
+	mpdebug/mpdebug_files.c \
+	mpdebug/mpdebug_vars.c \
+	mpdebug/wireprotocol.c \
 	netutils/dhcpserver.c \
 	netutils/netutils.c \
 	netutils/trace.c \
@@ -236,6 +241,7 @@ DRIVERS_SRC_C += $(addprefix drivers/,\
 	)
 
 SRC_C += \
+	mpdebug_port.c \
 	boardctrl.c \
 	main.c \
 	stm32_it.c \
@@ -573,7 +579,7 @@ endef
 
 define GENERATE_ELF
 	$(ECHO) "LINK $(1)"
-	$(Q)$(CC) $(LDFLAGS) -o $(1) $(2) $(LDFLAGS_MOD) $(LIBS)
+	$(Q)$(file >$(BUILD)/objects.rsp,$(2))$(CC) $(LDFLAGS) -o $(1) @$(BUILD)/objects.rsp $(LDFLAGS_MOD) $(LIBS)
 	$(Q)$(SIZE) $(1)
 	$(if $(filter-out $(TEXT0_ADDR),0x08000000), \
 		$(ECHO) "INFO: this build requires mboot to be installed first")

@@ -754,6 +754,31 @@ typedef uint64_t mp_uint_t;
 #define MICROPY_VM_HOOK_LOOP
 #endif
 
+// Hook called on every bytecode dispatch when MICROPY_PY_SYS_SETTRACE is on.
+// Lets an in-tree debug engine test breakpoints in C rather than through a
+// Python trace callback.  On the interpreter hot path: keep it cheap.
+#ifndef MICROPY_DEBUG_INSTR_HOOK
+#define MICROPY_DEBUG_INSTR_HOOK(code_state)
+#endif
+
+// Hook called with everything written to stdout.  Lets an in-tree debug engine
+// forward program output to a host over its own channel.
+#ifndef MICROPY_DEBUG_STDOUT_HOOK
+#define MICROPY_DEBUG_STDOUT_HOOK(str, len)
+#endif
+
+// Hook called when the VM is about to unwind an exception, while the frame
+// chain is still intact.  Lets a debug engine halt at the raise point.
+#ifndef MICROPY_DEBUG_EXC_HOOK
+#define MICROPY_DEBUG_EXC_HOOK(code_state, exc)
+#endif
+
+// Expose the in-tree debug engine to Python code. Diagnostics only: a shipping
+// build has no reason to let user code drive the debugger.
+#ifndef MICROPY_PY_MPDEBUG_MODULE
+#define MICROPY_PY_MPDEBUG_MODULE (0)
+#endif
+
 // Hook for the VM just before return opcode is finished being interpreted
 #ifndef MICROPY_VM_HOOK_RETURN
 #define MICROPY_VM_HOOK_RETURN
@@ -1928,6 +1953,19 @@ typedef time_t mp_timestamp_t;
 // Whether to provide "_thread" module
 #ifndef MICROPY_PY_THREAD
 #define MICROPY_PY_THREAD (0)
+#endif
+
+// Hooks a port calls around running main.py, so a board can halt before the
+// first bytecode of user code and be told when it has finished.  All three
+// default to nothing, so a port that defines none behaves exactly as before.
+#ifndef MICROPY_BOARD_BEFORE_MAIN_PY
+#define MICROPY_BOARD_BEFORE_MAIN_PY()
+#endif
+#ifndef MICROPY_BOARD_SKIP_MAIN_PY
+#define MICROPY_BOARD_SKIP_MAIN_PY() (0)
+#endif
+#ifndef MICROPY_BOARD_AFTER_MAIN_PY
+#define MICROPY_BOARD_AFTER_MAIN_PY()
 #endif
 
 // Whether to make the VM/runtime thread-safe using a global lock

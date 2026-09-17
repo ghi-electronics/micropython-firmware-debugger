@@ -1,4 +1,4 @@
-#define MICROPY_HW_BOARD_NAME               "Seeed XIAO ESP32S3"
+#define MICROPY_HW_BOARD_NAME               "Seeed XIAO ESP32S3 GHIMPDG006"
 #define MICROPY_HW_MCU_NAME                 "ESP32-S3"
 
 // REPL is on the native USB-CDC interface; the hardware UART is left free for

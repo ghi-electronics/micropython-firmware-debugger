@@ -33,6 +33,9 @@
 #include "pico/binary_info.h"
 #include "pico/multicore.h"
 #include "mpconfigboard.h"
+// Debugger hooks for every rp2 board; must follow mpconfigboard.h so a board
+// can opt out or raise the CDC count first.
+#include "mpdebug_board.h"
 
 // Board and hardware specific configuration
 #if PICO_RP2040

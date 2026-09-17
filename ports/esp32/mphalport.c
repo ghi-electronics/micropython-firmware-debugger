@@ -149,6 +149,10 @@ int mp_hal_stdin_rx_chr(void) {
 }
 
 mp_uint_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
+    // Mirror program output to the debug channel so print() reaches the Debug
+    // Console. Empty unless a board enables the debugger; the same one line
+    // sits in ports/stm32/mphalport.c and ports/rp2/mphalport.c.
+    MICROPY_DEBUG_STDOUT_HOOK(str, len);
     // Only release the GIL if many characters are being sent
     mp_uint_t ret = len;
     bool did_write = false;
@@ -199,6 +203,11 @@ void mp_hal_delay_ms(mp_uint_t ms) {
     uint64_t dt;
     uint64_t t0 = esp_timer_get_time();
     for (;;) {
+        // This loop is esp32's own; it does not go through MICROPY_EVENT_POLL_HOOK,
+        // so without this an in-tree debug engine is unreachable for the whole of a
+        // time.sleep() -- which is where a typical program spends nearly all of its
+        // life. Empty unless a board enables the debugger.
+        MICROPY_INTERNAL_EVENT_HOOK;
         mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_EXCEPTIONS);
         MICROPY_PY_SOCKET_EVENTS_HANDLER
         MP_THREAD_GIL_EXIT();

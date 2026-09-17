@@ -122,11 +122,35 @@ add_custom_target(
 # If any of the dependencies in this rule change then the C-preprocessor step must be run.
 # It only needs to be passed the list of MICROPY_SOURCE_QSTR files that have changed since
 # it was last run, but it looks like it's not possible to specify that with cmake.
+# The source list and the preprocessor flags together run to tens of thousands of
+# characters, well past the 8191 Windows allows on a command line.  The excess is
+# truncated silently, so the step writes an empty qstr.i.last and only fails several
+# steps later.  Pass both in response files; makeqstrdefs.py expands "@file" to its
+# lines.
+# Deliberately NOT in genhdr: these are written by file(GENERATE) at configure
+# time, and deleting genhdr is the usual way to force a qstr rebuild. Left in
+# there, that delete removes a file the build has no rule to recreate, and the
+# build fails with "missing and no known rule to make it".
+set(MICROPY_QSTRDEFS_SOURCES_RSP "${CMAKE_BINARY_DIR}/qstr.sources.rsp")
+set(MICROPY_CPP_FLAGS_RSP "${CMAKE_BINARY_DIR}/qstr.cppflags.rsp")
+file(GENERATE OUTPUT ${MICROPY_QSTRDEFS_SOURCES_RSP} CONTENT "$<JOIN:${MICROPY_SOURCE_QSTR},
+>
+")
+file(GENERATE OUTPUT ${MICROPY_CPP_FLAGS_RSP} CONTENT "$<JOIN:${MICROPY_CPP_FLAGS},
+>
+")
+
 add_custom_command(
     OUTPUT ${MICROPY_QSTRDEFS_LAST}
-    COMMAND ${Python3_EXECUTABLE} ${MICROPY_PY_DIR}/makeqstrdefs.py pp ${CMAKE_C_COMPILER} -E output ${MICROPY_GENHDR_DIR}/qstr.i.last cflags ${MICROPY_CPP_FLAGS} -DNO_QSTR cxxflags ${MICROPY_CPP_FLAGS} -DNO_QSTR sources ${MICROPY_SOURCE_QSTR}
+    COMMAND ${Python3_EXECUTABLE} ${MICROPY_PY_DIR}/makeqstrdefs.py pp ${CMAKE_C_COMPILER} -E output ${MICROPY_GENHDR_DIR}/qstr.i.last cflags @${MICROPY_CPP_FLAGS_RSP} -DNO_QSTR cxxflags @${MICROPY_CPP_FLAGS_RSP} -DNO_QSTR sources @${MICROPY_QSTRDEFS_SOURCES_RSP}
     DEPENDS ${MICROPY_MPVERSION}
         ${MICROPY_SOURCE_QSTR}
+        # The response files carry the source list and flags.  They must be
+        # dependencies too: with the list off the command line, a change to it
+        # leaves the command text identical, and without this the step would be
+        # considered up to date and quietly keep using the previous source set.
+        ${MICROPY_QSTRDEFS_SOURCES_RSP}
+        ${MICROPY_CPP_FLAGS_RSP}
     VERBATIM
     COMMAND_EXPAND_LISTS
 )
@@ -151,10 +175,14 @@ add_custom_command(
 
 add_custom_command(
     OUTPUT ${MICROPY_QSTRDEFS_PREPROCESSED}
-    COMMAND cat ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED} | sed "s/^Q(.*)/\"&\"/" | ${CMAKE_C_COMPILER} -E ${MICROPY_CPP_FLAGS} - | sed "s/^\\\"\\(Q(.*)\\)\\\"/\\1/" > ${MICROPY_QSTRDEFS_PREPROCESSED}
+    # Was a shell pipeline (cat | sed | cc -E | sed). CMake runs custom commands
+    # through cmd.exe under the Ninja generator, where that cannot parse -- and
+    # Ninja is the only generator ESP-IDF accepts. Same work, no shell.
+    COMMAND ${Python3_EXECUTABLE} ${MICROPY_PY_DIR}/makeqstrdefs.py qstrdefs pp ${CMAKE_C_COMPILER} -E output ${MICROPY_QSTRDEFS_PREPROCESSED} cflags @${MICROPY_CPP_FLAGS_RSP} -DNO_QSTR input ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED}
     DEPENDS ${MICROPY_QSTRDEFS_PY}
         ${MICROPY_QSTRDEFS_PORT}
         ${MICROPY_QSTRDEFS_COLLECTED}
+        ${MICROPY_CPP_FLAGS_RSP}
     VERBATIM
     COMMAND_EXPAND_LISTS
 )

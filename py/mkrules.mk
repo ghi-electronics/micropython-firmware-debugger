@@ -235,8 +235,10 @@ ifneq ($(PROG),)
 
 # The executable should have an .exe extension for builds targeting 'pure'
 # Windows, i.e. msvc or mingw builds, but not when using msys or cygwin's gcc.
+# LLVM-MinGW (clang-22+) reports "x86_64-w64-windows-gnu" -- also treat that
+# as a Windows-native target.
 COMPILER_TARGET := $(shell $(CC) -dumpmachine)
-ifneq (,$(findstring mingw,$(COMPILER_TARGET)))
+ifneq (,$(or $(findstring mingw,$(COMPILER_TARGET)),$(findstring windows-gnu,$(COMPILER_TARGET))))
 PROG := $(PROG).exe
 endif
 

@@ -240,11 +240,19 @@ int main(int argc, char **argv) {
         mp_usbd_init();
         #endif
 
+        // USB is up by this point and no user code has run yet, which is the
+        // only place a halt-before-main.py can sit.
+        MICROPY_BOARD_BEFORE_MAIN_PY();
+
         if (ret & PYEXEC_FORCED_EXIT) {
+            goto soft_reset_exit;
+        }
+        if (MICROPY_BOARD_SKIP_MAIN_PY()) {
             goto soft_reset_exit;
         }
         if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL && ret != 0) {
             ret = pyexec_file_if_exists("main.py");
+            MICROPY_BOARD_AFTER_MAIN_PY();
             if (ret & PYEXEC_FORCED_EXIT) {
                 goto soft_reset_exit;
             }

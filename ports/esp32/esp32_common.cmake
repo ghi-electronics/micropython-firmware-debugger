@@ -94,6 +94,28 @@ if(MICROPY_PY_TINYUSB)
         ${MICROPY_DIR}/shared/tinyusb/mp_usbd_runtime.c
     )
 
+    # The source-level debugger.  Gated so a build can genuinely leave it out --
+    # which matters for bisecting a boot problem, and for boards that do not want
+    # it.  Appended to MICROPY_SOURCE_TINYUSB because it needs the debug CDC and
+    # because that list is folded into MICROPY_SOURCE_QSTR below, which is what
+    # gets mpdebug_files.c and mpdebug_vars.c scanned for their
+    # MP_REGISTER_ROOT_POINTER entries.
+    if(NOT DEFINED MICROPY_HW_MPDEBUG)
+        set(MICROPY_HW_MPDEBUG ON)
+    endif()
+    if(MICROPY_HW_MPDEBUG)
+        list(APPEND MICROPY_SOURCE_TINYUSB
+            ${MICROPY_DIR}/shared/mpdebug/mpdebug.c
+            ${MICROPY_DIR}/shared/mpdebug/mpdebug_break.c
+            ${MICROPY_DIR}/shared/mpdebug/mpdebug_files.c
+            ${MICROPY_DIR}/shared/mpdebug/mpdebug_vars.c
+            ${MICROPY_DIR}/shared/mpdebug/wireprotocol.c
+            ${MICROPY_PORT_DIR}/mpdebug_port.c
+        )
+    else()
+        list(APPEND MICROPY_DEF_TINYUSB MICROPY_HW_MPDEBUG=0)
+    endif()
+
     list(APPEND MICROPY_INC_TINYUSB
         ${MICROPY_DIR}/shared/tinyusb/
     )

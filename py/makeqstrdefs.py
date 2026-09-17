@@ -9,6 +9,7 @@ import io
 import os
 import re
 import subprocess
+import tempfile
 import sys
 import multiprocessing, multiprocessing.dummy
 
@@ -24,6 +25,43 @@ _MODE_MODULE = "module"
 
 # Extract MP_REGISTER_ROOT_POINTER(...) macros.
 _MODE_ROOT_POINTER = "root_pointer"
+
+
+def expand_response_files(arguments):
+    # An argument of the form "@file" stands for the lines of that file.  Windows
+    # caps a command line at 8191 characters and the QSTR source list plus the
+    # preprocessor flags run well past that; the excess is dropped silently rather
+    # than reported, which then surfaces as an empty output file much later on.
+    expanded = []
+    for argument in arguments:
+        if argument.startswith("@"):
+            with io.open(argument[1:], encoding="utf-8") as f:
+                expanded.extend(line.strip() for line in f if line.strip())
+        else:
+            expanded.append(argument)
+    return expanded
+
+
+def command_with_response_file(cmd):
+    """Return (cmd, rsp_path), routing through a response file when needed.
+
+    Windows caps a command line at 32767 characters and ESP-IDF's include list
+    alone can exceed it; CreateProcess then fails with WinError 206, naming
+    neither the limit nor the command. gcc reads options from a response file.
+
+    A response file has its own quoting -- backslash escapes, quotes group -- so
+    every argument is escaped and wrapped. Both matter: Windows paths are full of
+    backslashes, and defines like -DFFCONF_H="..." carry quotes that belong to
+    the macro value and are otherwise eaten.
+    """
+    if sum(len(a) + 1 for a in cmd) <= 30000:
+        return cmd, None
+    fd, path = tempfile.mkstemp(suffix=".rsp", text=True)
+    bs, q = chr(92), chr(34)
+    with os.fdopen(fd, "w") as rsp:
+        rsp.write(chr(10).join(
+            q + a.replace(bs, bs + bs).replace(q, bs + q) + q for a in cmd[1:]))
+    return [cmd[0], "@" + path], path
 
 
 class PreprocessorError(Exception):
@@ -52,6 +90,11 @@ def preprocess():
             cxxsources.append(source)
         elif is_c_source(source):
             csources.append(source)
+    if not csources and not cxxsources:
+        # Never write an empty output: it is not a valid build state, and left
+        # silent it fails several steps later with nothing pointing back here.
+        raise PreprocessorError("no sources to preprocess")
+
     try:
         os.makedirs(os.path.dirname(args.output[0]))
     except OSError:
@@ -66,9 +109,16 @@ def preprocess():
 
     def pp(flags):
         def run(files):
+            rsp_path = None
             try:
                 filtered_lines = []
                 cmd = args.pp + flags + files
+                # Windows caps a command line at 32767 characters, and the
+                # ESP-IDF include list on its own is long enough to exceed it.
+                # CreateProcess then fails with WinError 206, which names
+                # neither the limit nor the command.  gcc reads options from a
+                # response file, so hand it one once the command grows.
+                cmd, rsp_path = command_with_response_file(cmd)
                 with subprocess.Popen(cmd, stdout=subprocess.PIPE) as proc:
                     recent_file = None
                     for line in proc.stdout:
@@ -87,6 +137,12 @@ def preprocess():
                 return b"".join(filtered_lines)
             except subprocess.CalledProcessError as er:
                 raise PreprocessorError(str(er))
+            finally:
+                if rsp_path is not None:
+                    try:
+                        os.unlink(rsp_path)
+                    except OSError:
+                        pass
 
         return run
 
@@ -94,8 +150,11 @@ def preprocess():
         cpus = multiprocessing.cpu_count()
     except NotImplementedError:
         cpus = 1
-    p = multiprocessing.dummy.Pool(cpus)
-    with open(args.output[0], "wb") as out_file:
+    # Close the pool deterministically.  Left to the garbage collector it is
+    # finalised during interpreter shutdown, by which point its notifier handle
+    # is already gone -- on Python 3.14 that raises OSError out of Pool.__del__
+    # and fails the build, having merely warned on older versions.
+    with multiprocessing.dummy.Pool(cpus) as p, open(args.output[0], "wb") as out_file:
         for flags, sources in (
             (args.cflags, csources),
             (args.cxxflags, cxxsources),
@@ -104,6 +163,40 @@ def preprocess():
             chunks = [sources[i : i + batch_size] for i in range(0, len(sources), batch_size or 1)]
             for output in p.imap(pp(flags), chunks):
                 out_file.write(output)
+
+
+def preprocess_qstrdefs():
+    r"""Build qstrdefs.preprocessed.h without a POSIX shell.
+
+    Replaces the pipeline
+
+        cat inputs | sed 's/^Q(.*)/"&"/' | cc -E flags - | sed 's/^"\(Q(.*)\)"/\1/'
+
+    The quoting protects Q(...) entries from the preprocessor and is undone
+    afterwards.  As a shell pipeline it needs cat, sed and a shell that can parse
+    it: fine under make, but CMake's Ninja generator runs custom commands through
+    cmd.exe, where it fails with "sed: unterminated `s' command".  Ninja is the
+    only generator ESP-IDF accepts, so this had to stop being a pipeline.
+    """
+    q_line = re.compile(rb"(?m)^(Q\(.*\))")
+    data = b"".join(io.open(f, "rb").read() for f in args.input)
+    data = q_line.sub(rb'"\1"', data)
+
+    cmd, rsp_path = command_with_response_file(args.pp + args.cflags + ["-"])
+    try:
+        proc = subprocess.run(cmd, input=data, stdout=subprocess.PIPE)
+    finally:
+        if rsp_path is not None:
+            try:
+                os.unlink(rsp_path)
+            except OSError:
+                pass
+    if proc.returncode:
+        raise PreprocessorError("preprocessor failed on qstrdefs")
+
+    quoted = re.compile(rb'(?m)^"(Q\(.*\))"')
+    with open(args.output[0], "wb") as out_file:
+        out_file.write(quoted.sub(rb"\1", proc.stdout))
 
 
 def write_out(fname, output):
@@ -204,6 +297,23 @@ if __name__ == "__main__":
     args = Args()
     args.command = sys.argv[1]
 
+    if args.command == "qstrdefs":
+        named = {s: [] for s in ["qstrdefs", "pp", "output", "cflags", "input"]}
+        current_tok = "qstrdefs"
+        for arg in sys.argv[1:]:
+            if arg in named:
+                current_tok = arg
+            else:
+                named[current_tok].append(arg)
+        for k, v in named.items():
+            setattr(args, k, expand_response_files(v))
+        try:
+            preprocess_qstrdefs()
+        except PreprocessorError as er:
+            print(er)
+            sys.exit(1)
+        sys.exit(0)
+
     if args.command == "pp":
         named_args = {
             s: []
@@ -229,7 +339,7 @@ if __name__ == "__main__":
             sys.exit(2)
 
         for k, v in named_args.items():
-            setattr(args, k, v)
+            setattr(args, k, expand_response_files(v))
 
         try:
             preprocess()

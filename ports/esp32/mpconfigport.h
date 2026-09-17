@@ -346,9 +346,15 @@ void *esp_native_code_commit(void *, size_t, void *);
 #define MICROPY_PY_SOCKET_EVENTS_HANDLER
 #endif
 
+// esp32 defines its own EVENT_POLL_HOOK instead of going through
+// mp_event_handle_nowait(), so MICROPY_INTERNAL_EVENT_HOOK -- where an in-tree
+// debug engine puts its idle pump -- is otherwise never reached on this port.
+// Without it the debug channel is dead whenever no bytecode is running, which is
+// exactly the case at a REPL prompt.
 #if MICROPY_PY_THREAD
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
+        MICROPY_INTERNAL_EVENT_HOOK; \
         mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_EXCEPTIONS); \
         MICROPY_PY_SOCKET_EVENTS_HANDLER \
         MP_THREAD_GIL_EXIT(); \
@@ -363,6 +369,7 @@ void *esp_native_code_commit(void *, size_t, void *);
 #endif
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
+        MICROPY_INTERNAL_EVENT_HOOK; \
         mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_EXCEPTIONS); \
         MICROPY_PY_SOCKET_EVENTS_HANDLER \
             MICROPY_PY_WAIT_FOR_INTERRUPT; \
@@ -450,3 +457,10 @@ void boardctrl_startup(void);
 #ifndef MICROPY_ESP_IDF_ENTRY
 #define MICROPY_ESP_IDF_ENTRY app_main
 #endif
+
+// Debugger hooks for every esp32 board.  This must come near the END of this
+// file, not next to mpconfigboard.h: the block is gated on
+// MICROPY_HW_ENABLE_USBDEV, which is defined further down. Included too early,
+// an undefined macro reads as 0 in #if and the whole debugger silently
+// disappears -- the engine still compiles, with no hooks and no settrace.
+#include "mpdebug_board.h"
