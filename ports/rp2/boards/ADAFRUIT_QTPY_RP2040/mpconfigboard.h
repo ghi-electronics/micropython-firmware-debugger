@@ -1,7 +1,7 @@
 // https://www.adafruit.com/product/4900
 // https://learn.adafruit.com/adafruit-qt-py-2040/pinouts
 
-#define MICROPY_HW_BOARD_NAME          "Adafruit QT Py RP2040 GHIMPDG004"
+#define MICROPY_HW_BOARD_NAME          "Adafruit QT Py RP2040"
 
 #define MICROPY_HW_USB_VID (0x239A)
 #define MICROPY_HW_USB_PID (0x80F8)
