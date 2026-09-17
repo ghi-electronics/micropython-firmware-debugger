@@ -24,8 +24,15 @@ This repository is for people who want to **build the firmware themselves for a 
 
 | Port | Toolchain |
 |---|---|
-| **rp2** | CMake, GNU Make, `arm-none-eabi-gcc`, Python 3 |
-| **esp32** | ESP-IDF v5.5 (Espressif installer) |
+| **rp2** | CMake ≥ 3.13, GNU Make, `arm-none-eabi-gcc` **12 or newer**, `picotool` **2.3.0**, Python 3 |
+| **esp32** | ESP-IDF **v5.5**, Python 3 (installed with ESP-IDF) |
+
+This fork is based on **MicroPython v1.29.0** — the same version listed in `git describe` on the `dev` branch. Submodule pointers are pinned to what v1.29.0 references, so builds produce the tested toolchain output.
+
+### Setting up the rp2 toolchain
+
+- **`arm-none-eabi-gcc`** — install the [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) 12.2 or newer. Older GCC (8.3, common on some machines under `C:\gcc`) fails at the link step because its `ld` doesn't parse the `--defsym` expressions the pico-sdk emits. `arm-none-eabi-gcc --version` should print 12.x or later.
+- **`picotool` 2.3.0** — pico-sdk needs this to post-process the firmware. Grab a prebuilt binary from [pico-sdk-tools releases](https://github.com/raspberrypi/pico-sdk-tools/releases) and either put its folder on `PATH`, or set the `picotool_DIR` environment variable to the folder containing `picotoolConfig.cmake`. Without it, pico-sdk tries to build picotool from source, which is a fragile Windows path.
 
 ### Setting up ESP-IDF
 
@@ -38,7 +45,7 @@ ESP32 builds need ESP-IDF v5.5 installed and its environment sourced in every te
   . $IDF_PATH/export.sh
   ```
 
-After sourcing, `idf.py --version` should print an ESP-IDF version. Only ESP32 builds need this; rp2 builds run from any regular shell.
+After sourcing, verify with `Get-Command idf.py` on Windows PowerShell (should print a path) or `idf.py --version` on Linux / macOS. Only ESP32 builds need this; rp2 builds run from any regular shell.
 
 **1. Clone this fork.**
 
