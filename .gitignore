@@ -33,3 +33,7 @@ user.props
 # Created by ci.sh esp8266 targets
 /xtensa-lx106-elf-standalone.tar.gz
 /xtensa-lx106-elf/
+
+# Local ESP-IDF environment helper — user-specific paths, do not commit.
+# See README "Setting up ESP-IDF" for the standard setup path.
+ports/esp32/build_idf_env.ps1

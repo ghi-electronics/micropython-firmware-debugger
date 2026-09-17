@@ -27,6 +27,19 @@ This repository is for people who want to **build the firmware themselves for a 
 | **rp2** | CMake, GNU Make, `arm-none-eabi-gcc`, Python 3 |
 | **esp32** | ESP-IDF v5.5 (Espressif installer) |
 
+### Setting up ESP-IDF
+
+ESP32 builds need ESP-IDF v5.5 installed and its environment sourced in every terminal session used for a build. Install it once via [Espressif's installer](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32/get-started/windows-setup.html) on Windows or [the Linux / macOS instructions](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32/get-started/linux-macos-setup.html), then load it before you build:
+
+- **Windows** — launch the "ESP-IDF 5.5 PowerShell" (or "ESP-IDF 5.5 CMD") shortcut from your Start menu. It opens a shell with the env pre-loaded.
+- **Linux / macOS** — source the export script in your shell:
+
+  ```bash
+  . $IDF_PATH/export.sh
+  ```
+
+After sourcing, `idf.py --version` should print an ESP-IDF version. Only ESP32 builds need this; rp2 builds run from any regular shell.
+
 **1. Clone this fork.**
 
 ```bash
