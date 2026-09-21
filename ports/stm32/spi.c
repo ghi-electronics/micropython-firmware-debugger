@@ -244,7 +244,7 @@ int spi_find_index(mp_obj_t id) {
 }
 
 static uint32_t spi_get_source_freq(SPI_HandleTypeDef *spi) {
-    #if defined(STM32F0) || defined(STM32G0)
+    #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0)
     return HAL_RCC_GetPCLK1Freq();
     #elif defined(STM32H5)
     if (spi->Instance == SPI1) {

@@ -35,6 +35,37 @@
 #include "irq.h"
 #include "mpu.h"
 
+#if defined(STM32C0)
+// STM32C0 port does not use the DMA driver; provide only the required stubs.
+void dma_init_handle(DMA_HandleTypeDef *dma, const dma_descr_t *dma_descr, uint32_t dir, void *data) {
+    (void)dma; (void)dma_descr; (void)dir; (void)data;
+}
+void dma_init(DMA_HandleTypeDef *dma, const dma_descr_t *dma_descr, uint32_t dir, void *data) {
+    (void)dma; (void)dma_descr; (void)dir; (void)data;
+}
+void dma_deinit(const dma_descr_t *dma_descr) {
+    (void)dma_descr;
+}
+void dma_invalidate_channel(const dma_descr_t *dma_descr) {
+    (void)dma_descr;
+}
+void dma_external_acquire(uint32_t controller, uint32_t stream) {
+    (void)controller; (void)stream;
+}
+void dma_external_release(uint32_t controller, uint32_t stream) {
+    (void)controller; (void)stream;
+}
+void dma_nohal_init(const dma_descr_t *dma_descr, uint32_t config) {
+    (void)dma_descr; (void)config;
+}
+void dma_nohal_deinit(const dma_descr_t *dma_descr) {
+    (void)dma_descr;
+}
+void dma_nohal_start(const dma_descr_t *dma_descr, uint32_t src_addr, uint32_t dst_addr, uint16_t len) {
+    (void)dma_descr; (void)src_addr; (void)dst_addr; (void)len;
+}
+#else
+
 // When this option is enabled, the DMA will turn off automatically after
 // a period of inactivity.
 #ifndef MICROPY_HW_DMA_ENABLE_AUTO_TURN_OFF
@@ -81,7 +112,7 @@ typedef union {
 struct _dma_descr_t {
     #if defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
     DMA_Stream_TypeDef *instance;
-    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32N6) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
+    #elif defined(STM32C0) || defined(STM32F0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32N6) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
     DMA_Channel_TypeDef *instance;
     #else
     #error "Unsupported Processor"
@@ -2023,3 +2054,5 @@ void dma_unprotect_rx_region(void *dest, size_t len) {
 }
 
 #endif
+
+#endif // STM32C0 gate

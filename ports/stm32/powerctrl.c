@@ -70,6 +70,10 @@ static uint32_t __attribute__((unused)) micropy_hw_clk_pllm = MICROPY_HW_CLK_PLL
     (((PWR->CSR1 & PWR_CSR1_ACTVOS) && (SYSCFG->PWRCR & SYSCFG_PWRCR_ODEN)) ? \
     PWR_REGULATOR_VOLTAGE_SCALE0 : (PWR->CSR1 & PWR_CSR1_ACTVOS))
 #endif
+#elif defined(STM32C0)
+#define RCC_SR          CSR2
+#define RCC_SR_SFTRSTF  RCC_CSR2_SFTRSTF
+#define RCC_SR_RMVF     RCC_CSR2_RMVF
 #else
 #define RCC_SR          CSR
 #define RCC_SR_SFTRSTF  RCC_CSR_SFTRSTF
@@ -209,6 +213,7 @@ static const sysclk_scaling_table_entry_t volt_scale_table[] = {
 };
 #endif
 
+#if !defined(STM32C0)
 static int powerctrl_config_vos(uint32_t sysclk_mhz) {
     #if defined(STM32F7) || defined(STM32H7)
     uint32_t volt_scale = PWR_REGULATOR_VOLTAGE_SCALE1;
@@ -309,10 +314,11 @@ int powerctrl_rcc_clock_config_pll(RCC_ClkInitTypeDef *rcc_init, uint32_t sysclk
 
     return 0;
 }
+#endif // !defined(STM32C0)
 
 #endif
 
-#if !defined(STM32F0) && !defined(STM32G0) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4)
+#if !defined(STM32C0) && !defined(STM32F0) && !defined(STM32G0) && !defined(STM32L0) && !defined(STM32L1) && !defined(STM32L4)
 
 static uint32_t calc_ahb_div(uint32_t wanted_div) {
     #if defined(STM32H7)
@@ -792,6 +798,11 @@ static void powerctrl_low_power_exit_wb55() {
 #endif
 
 void powerctrl_enter_stop_mode(void) {
+    #if defined(STM32C0)
+    // STM32C0 stop-mode support is not implemented in this port.
+    __WFI();
+    return;
+    #else
     // Disable IRQs so that the IRQ that wakes the device from stop mode is not
     // executed until after the clocks are reconfigured
     uint32_t irq_state = disable_irq();
@@ -1047,6 +1058,7 @@ void powerctrl_enter_stop_mode(void) {
 
     // Enable IRQs now that all clocks are reconfigured
     enable_irq(irq_state);
+    #endif
 }
 
 #if defined(STM32N6)
@@ -1078,6 +1090,12 @@ const uint32_t iram_bootloader_isr_vector[] = {
 #endif
 
 MP_NORETURN void powerctrl_enter_standby_mode(void) {
+    #if defined(STM32C0)
+    // STM32C0 has no standby mode support in this port; just reset.
+    powerctrl_mcu_reset();
+    for (;;) {
+    }
+    #else
     rtc_init_finalise();
 
     #if defined(STM32N6)
@@ -1222,4 +1240,5 @@ MP_NORETURN void powerctrl_enter_standby_mode(void) {
 
     // MCU is reset on exit from standby, but just in case it's not, do an explicit reset.
     powerctrl_mcu_reset();
+    #endif
 }

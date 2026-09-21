@@ -428,6 +428,19 @@ void mp_usbd_ll_init(void);
 
 #define CFG_TUSB_MCU OPT_MCU_STM32F7
 
+// Configuration for STM32C0 series
+#elif defined(STM32C0)
+
+#define MP_HAL_UNIQUE_ID_ADDRESS (UID_BASE)
+#define PYB_EXTI_NUM_VECTORS (22)
+#define MICROPY_HW_MAX_I2C (2)
+#define MICROPY_HW_MAX_TIMER (17)
+#define MICROPY_HW_MAX_UART (4)
+#define MICROPY_HW_MAX_LPUART (0)
+
+// TinyUSB doesn't support STM32C0; USB not used in this port.
+#define CFG_TUSB_MCU OPT_MCU_NONE
+
 // Configuration for STM32G0 series
 #elif defined(STM32G0)
 

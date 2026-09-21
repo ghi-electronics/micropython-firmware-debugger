@@ -30,6 +30,40 @@
 #include "rtc.h"
 #include "irq.h"
 
+#if !MICROPY_HW_ENABLE_RTC
+
+// RTC support disabled on this board; provide the minimal stubs.
+#include "extmod/modmachine.h"
+
+RTC_HandleTypeDef RTCHandle;
+
+void rtc_init_start(bool force_init) { (void)force_init; }
+void rtc_init_finalise(void) {}
+void rtc_wakeup_init(void) {}
+
+mp_obj_t pyb_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
+    (void)n_args; (void)args;
+    return mp_const_none;
+}
+
+// pyb_rtc_type is referenced by the machine module table; provide a stub type.
+static mp_obj_t pyb_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    (void)type; (void)n_args; (void)n_kw; (void)args;
+    mp_raise_msg(&mp_type_NotImplementedError, MP_ERROR_TEXT("RTC not supported"));
+}
+MP_DEFINE_CONST_OBJ_TYPE(
+    pyb_rtc_type,
+    MP_QSTR_RTC,
+    MP_TYPE_FLAG_NONE,
+    make_new, pyb_rtc_make_new
+    );
+
+uint64_t mp_hal_time_ns(void) {
+    return 0;
+}
+
+#else
+
 #if defined(STM32WB)
 #define RCC_CSR_LSION RCC_CSR_LSI1ON
 #define RCC_FLAG_LSIRDY RCC_FLAG_LSI1RDY
@@ -935,3 +969,5 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new, pyb_rtc_make_new,
     locals_dict, &pyb_rtc_locals_dict
     );
+
+#endif // MICROPY_HW_ENABLE_RTC

@@ -30,7 +30,11 @@
 #include "uart.h"
 
 bool mp_os_dupterm_is_builtin_stream(mp_const_obj_t stream) {
+    #if MICROPY_PY_MACHINE_UART || MICROPY_HW_STM_USB_STACK
     const mp_obj_type_t *type = mp_obj_get_type(stream);
+    #else
+    (void)stream;
+    #endif
     return false
            #if MICROPY_PY_MACHINE_UART
            || type == &machine_uart_type

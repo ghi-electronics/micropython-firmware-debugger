@@ -128,6 +128,27 @@ void SystemClock_Config(void) {
     powerctrl_config_systick();
 }
 
+#elif defined(STM32C0)
+
+void SystemClock_Config(void) {
+    // Enable HSI (48 MHz internal oscillator) and use it as SYSCLK.
+    // No PLL is required on STM32C0 for max frequency (48 MHz).
+    RCC->CR |= RCC_CR_HSION;
+    while ((RCC->CR & RCC_CR_HSIRDY) == 0) {
+    }
+
+    // HSIDIV = 0 (divide by 1) -> HSI = 48 MHz
+    RCC->CR &= ~RCC_CR_HSIDIV;
+
+    // AHB, APB prescalers = 1 (default 0 in CFGR).
+    // Set flash latency to 1 wait state for SYSCLK > 24 MHz on STM32C0.
+    FLASH->ACR = (FLASH->ACR & ~FLASH_ACR_LATENCY) | FLASH_ACR_LATENCY_0;
+
+    // SYSCLK source = HSISYS (already selected by default after reset), so no CFGR change needed.
+    SystemCoreClockUpdate();
+    powerctrl_config_systick();
+}
+
 #elif defined(STM32G0)
 
 void SystemClock_Config(void) {

@@ -70,6 +70,12 @@
 #define RCC_SR_BORRSTF  RCC_RSR_BORRSTF
 #define RCC_SR_PINRSTF  RCC_RSR_PINRSTF
 #define RCC_SR_RMVF     RCC_RSR_RMVF
+#elif defined(STM32C0)
+#define RCC_SR          CSR2
+#define RCC_SR_IWDGRSTF RCC_CSR2_IWDGRSTF
+#define RCC_SR_WWDGRSTF RCC_CSR2_WWDGRSTF
+#define RCC_SR_PINRSTF  RCC_CSR2_PINRSTF
+#define RCC_SR_RMVF     RCC_CSR2_RMVF
 #else
 #define RCC_SR          CSR
 #define RCC_SR_IWDGRSTF RCC_CSR_IWDGRSTF
@@ -96,18 +102,47 @@
 #define MICROPY_PY_MACHINE_RNG_ENTRY
 #endif
 
+#if MICROPY_HW_ENABLE_RTC
+#define MICROPY_PY_MACHINE_RTC_ENTRY { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&pyb_rtc_type) },
+#else
+#define MICROPY_PY_MACHINE_RTC_ENTRY
+#endif
+
+#if MICROPY_PY_MACHINE_TIMER
+#define MICROPY_PY_MACHINE_TIMER_ENTRY { MP_ROM_QSTR(MP_QSTR_Timer), MP_ROM_PTR(&machine_timer_type) },
+#else
+#define MICROPY_PY_MACHINE_TIMER_ENTRY
+#endif
+
+#ifndef MICROPY_PY_MACHINE_INFO
+#define MICROPY_PY_MACHINE_INFO (1)
+#endif
+#if MICROPY_PY_MACHINE_INFO
+#define MICROPY_PY_MACHINE_INFO_ENTRY { MP_ROM_QSTR(MP_QSTR_info), MP_ROM_PTR(&machine_info_obj) },
+#else
+#define MICROPY_PY_MACHINE_INFO_ENTRY
+#endif
+
+#ifndef MICROPY_PY_MACHINE_LIGHTSLEEP
+#define MICROPY_PY_MACHINE_LIGHTSLEEP (1)
+#endif
+#if MICROPY_PY_MACHINE_LIGHTSLEEP
+#define MICROPY_PY_MACHINE_LIGHTSLEEP_ENTRY { MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&machine_lightsleep_obj) },
+#else
+#define MICROPY_PY_MACHINE_LIGHTSLEEP_ENTRY
+#endif
+
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
-    { MP_ROM_QSTR(MP_QSTR_info),                MP_ROM_PTR(&machine_info_obj) }, \
+    MICROPY_PY_MACHINE_INFO_ENTRY \
     MICROPY_PY_MACHINE_RNG_ENTRY \
-    { MP_ROM_QSTR(MP_QSTR_sleep),               MP_ROM_PTR(&machine_lightsleep_obj) }, \
+    MICROPY_PY_MACHINE_LIGHTSLEEP_ENTRY \
     \
     { MP_ROM_QSTR(MP_QSTR_disable_irq),         MP_ROM_PTR(&machine_disable_irq_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_enable_irq),          MP_ROM_PTR(&machine_enable_irq_obj) }, \
     \
     { MP_ROM_QSTR(MP_QSTR_Pin),                 MP_ROM_PTR(&pin_type) }, \
-    \
-    { MP_ROM_QSTR(MP_QSTR_RTC),                 MP_ROM_PTR(&pyb_rtc_type) }, \
-    { MP_ROM_QSTR(MP_QSTR_Timer),               MP_ROM_PTR(&machine_timer_type) }, \
+    MICROPY_PY_MACHINE_RTC_ENTRY \
+    MICROPY_PY_MACHINE_TIMER_ENTRY \
     \
     { MP_ROM_QSTR(MP_QSTR_PWRON_RESET),         MP_ROM_INT(PYB_RESET_POWER_ON) }, \
     { MP_ROM_QSTR(MP_QSTR_HARD_RESET),          MP_ROM_INT(PYB_RESET_HARD) }, \
@@ -201,7 +236,7 @@ static mp_obj_t machine_info(size_t n_args, const mp_obj_t *args) {
     // get and print clock speeds
     // SYSCLK=168MHz, HCLK=168MHz, PCLK1=42MHz, PCLK2=84MHz
     {
-        #if defined(STM32F0) || defined(STM32G0)
+        #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0)
         mp_printf(print, "S=%u\nH=%u\nP1=%u\n",
             (unsigned int)HAL_RCC_GetSysClockFreq(),
             (unsigned int)HAL_RCC_GetHCLKFreq(),
@@ -345,7 +380,7 @@ static mp_obj_t mp_machine_get_freq(void) {
         mp_obj_new_int(HAL_RCC_GetSysClockFreq()),
         mp_obj_new_int(HAL_RCC_GetHCLKFreq()),
         mp_obj_new_int(HAL_RCC_GetPCLK1Freq()),
-        #if !defined(STM32F0) && !defined(STM32G0)
+        #if !defined(STM32C0) && !defined(STM32F0) && !defined(STM32G0)
         mp_obj_new_int(HAL_RCC_GetPCLK2Freq()),
         #endif
     };
@@ -354,7 +389,7 @@ static mp_obj_t mp_machine_get_freq(void) {
 }
 
 static void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
-    #if defined(STM32F0) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32G0) || defined(STM32N6)
+    #if defined(STM32C0) || defined(STM32F0) || defined(STM32L0) || defined(STM32L1) || defined(STM32L4) || defined(STM32G0) || defined(STM32N6)
     mp_raise_NotImplementedError(MP_ERROR_TEXT("machine.freq set not supported yet"));
     #else
     mp_int_t sysclk = mp_obj_get_int(args[0]);

@@ -55,6 +55,7 @@ MP_NORETURN void boardctrl_fatal_error(const char *msg) {
     }
 }
 
+#if MICROPY_VFS
 static void flash_error(int n) {
     for (int i = 0; i < n; i++) {
         led_state(PYB_LED_RED, 1);
@@ -66,6 +67,7 @@ static void flash_error(int n) {
     }
     led_state(PYB_LED_GREEN, 0);
 }
+#endif
 
 #if MICROPY_HW_USES_BOOTLOADER
 void boardctrl_maybe_enter_mboot(size_t n_args, const void *args_in) {
@@ -190,6 +192,7 @@ void boardctrl_top_soft_reset_loop(boardctrl_state_t *state) {
 }
 
 int boardctrl_run_boot_py(boardctrl_state_t *state) {
+    #if MICROPY_VFS
     bool run_boot_py = state->reset_mode != BOARDCTRL_RESET_MODE_SAFE_MODE;
 
     if (run_boot_py) {
@@ -207,6 +210,9 @@ int boardctrl_run_boot_py(boardctrl_state_t *state) {
             flash_error(4);
         }
     }
+    #else
+    (void)state;
+    #endif
 
     // Turn boot-up LEDs off
 
@@ -224,6 +230,7 @@ int boardctrl_run_boot_py(boardctrl_state_t *state) {
 }
 
 int boardctrl_run_main_py(boardctrl_state_t *state) {
+    #if MICROPY_VFS
     bool run_main_py = state->reset_mode != BOARDCTRL_RESET_MODE_SAFE_MODE
         && pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL;
 
@@ -245,6 +252,9 @@ int boardctrl_run_main_py(boardctrl_state_t *state) {
             flash_error(3);
         }
     }
+    #else
+    (void)state;
+    #endif
 
     return BOARDCTRL_CONTINUE;
 }

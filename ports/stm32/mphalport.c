@@ -47,7 +47,10 @@ MP_WEAK uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
         const mp_stream_p_t *stream_p = mp_get_stream(pyb_stdio_uart);
         ret = stream_p->ioctl(pyb_stdio_uart, MP_STREAM_POLL, poll_flags, &errcode);
     }
-    return ret | mp_os_dupterm_poll(poll_flags);
+    #if MICROPY_PY_OS_DUPTERM
+    ret |= mp_os_dupterm_poll(poll_flags);
+    #endif
+    return ret;
 }
 
 MP_WEAK int mp_hal_stdin_rx_chr(void) {
@@ -64,10 +67,12 @@ MP_WEAK int mp_hal_stdin_rx_chr(void) {
         if (MP_STATE_PORT(pyb_stdio_uart) != NULL && uart_rx_any(MP_STATE_PORT(pyb_stdio_uart))) {
             return uart_rx_char(MP_STATE_PORT(pyb_stdio_uart));
         }
+        #if MICROPY_PY_OS_DUPTERM
         int dupterm_c = mp_os_dupterm_rx_chr();
         if (dupterm_c >= 0) {
             return dupterm_c;
         }
+        #endif
         #if MICROPY_HW_USB_CDC && MICROPY_HW_TINYUSB_STACK
         mp_usbd_cdc_poll_interfaces(0);
         int c = ringbuf_get(&stdin_ringbuf);
@@ -97,11 +102,13 @@ MP_WEAK mp_uint_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
     #if 0 && defined(USE_HOST_MODE) && MICROPY_HW_HAS_LCD
     lcd_print_strn(str, len);
     #endif
+    #if MICROPY_PY_OS_DUPTERM
     int dupterm_res = mp_os_dupterm_tx_strn(str, len);
     if (dupterm_res >= 0) {
         did_write = true;
         ret = MIN((mp_uint_t)dupterm_res, ret);
     }
+    #endif
     return did_write ? ret : 0;
 }
 
@@ -141,7 +148,7 @@ void mp_hal_gpio_clock_enable(GPIO_TypeDef *gpio) {
     #elif defined(STM32L0)
     #define AHBxENR IOPENR
     #define AHBxENR_GPIOAEN_Pos RCC_IOPENR_IOPAEN_Pos
-    #elif defined(STM32G0)
+    #elif defined(STM32C0) || defined(STM32G0)
     #define AHBxENR IOPENR
     #define AHBxENR_GPIOAEN_Pos RCC_IOPENR_GPIOAEN_Pos
     #elif defined(STM32G4) || defined(STM32H5) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL)
