@@ -26,6 +26,19 @@
 
 /*
  * stm32 implementation of the debug engine's port interface.
+ *
+ * Two flavours live here, selected by CPU family:
+ *
+ *   - Dual-CDC boards (L4, H7, ...): CDC 0 is REPL, CDC 1 is the debugger.
+ *     The REPL getc is used by the halt loop as a Ctrl-C escape hatch when
+ *     nobody has opened the debugger channel.  Persist word lives in
+ *     RTC->BKP31R.  storage_flush() commits the FAT/littlefs write cache.
+ *
+ *   - Single-CDC boards (STM32C0): CDC 0 carries both mpy_boot.c's upload
+ *     window and, once boot completes, the debugger wire protocol.  There
+ *     is no REPL CDC and no filesystem, so repl_getc always returns -1 and
+ *     storage_flush is a no-op.  Persist word lives in PWR->BKPnR because
+ *     the C0 RTC has no BKPxR registers.
  */
 
 #include <string.h>
@@ -39,7 +52,9 @@
 #include "py/mphal.h"
 #include "usb.h"
 #include "boardctrl.h"
+#if MICROPY_HW_ENABLE_STORAGE
 #include "storage.h"
+#endif
 #include "shared/mpdebug/mpdebug.h"
 #include "shared/mpdebug/mpdebug_port.h"
 
@@ -83,6 +98,8 @@ bool mp_debug_port_tx_half_empty(void) {
 }
 
 int mp_debug_port_repl_getc(void) {
+    #if MICROPY_HW_USB_CDC_NUM >= 2
+    // Dual-CDC layout: CDC 0 is the REPL, distinct from MP_DEBUG_CDC_INDEX.
     usbd_cdc_itf_t *repl = usb_vcp_get_cdc_itf(0);
     if (repl == NULL || usbd_cdc_rx_num(repl) <= 0) {
         return -1;
@@ -92,30 +109,51 @@ int mp_debug_port_repl_getc(void) {
         return -1;
     }
     return c;
+    #else
+    // Single-CDC boards share one interface between the debugger wire protocol
+    // and any REPL bytes.  Reading them here would steal frame bytes from the
+    // engine, so we simply have no Ctrl-C escape hatch on those boards -- the
+    // user's way out is to press reset.
+    return -1;
+    #endif
 }
 
 // A hard reset re-zeroes .bss, so the stop-on-start request cannot simply live
-// there if it has to survive one.  Stash it in an RTC backup register instead:
+// there if it has to survive one.  Stash it in a backup register instead:
 // those sit in the backup domain and are cleared only by a backup-domain reset
 // or loss of VBAT, not by a system reset.  Tagged so an unrelated value cannot
 // be mistaken for a request.
+//
+// Register choice differs by family:
+//   - L4/H7/F4 have RTC->BKPxR (up to 32 of them).  We use BKP31R.
+//   - C0 has NO RTC BKPxR at all.  Its backup registers live on PWR (PWR->BKP0R
+//     .. BKP3R), reachable without arming any backup-domain protection bit.
 #define MP_DBG_PERSIST_TAG   (0x4D504400u)   // "MPD" << 8
 #define MP_DBG_PERSIST_MASK  (0xFFFFFF00u)
-#define MP_DBG_PERSIST_REG   (RTC->BKP31R)
 
-static void mp_debug_port_persist_enable(void) {
-    // The backup registers need the RTC APB clock and the backup-domain write
-    // protection lifted.  Neither requires the RTC itself to be running, which
-    // matters when a board keeps MICROPY_HW_ENABLE_RTC = 0.  The macro name
-    // for "APB clock only, not the counter" differs between STM32 families:
-    // L4 has RTCAPB, H7 rolls it into RTC_CLK (sets RTCAPBEN in APB4ENR).
-    #if defined(__HAL_RCC_RTCAPB_CLK_ENABLE)
-    __HAL_RCC_RTCAPB_CLK_ENABLE();
-    #else
-    __HAL_RCC_RTC_CLK_ENABLE();
-    #endif
-    HAL_PWR_EnableBkUpAccess();
-}
+#if defined(STM32C0)
+    // C0: PWR clock must be enabled; there is no backup-domain write protection.
+    #define MP_DBG_PERSIST_REG   (PWR->BKP0R)
+    static void mp_debug_port_persist_enable(void) {
+        __HAL_RCC_PWR_CLK_ENABLE();
+    }
+#else
+    // Everything else: RTC APB clock + backup-domain write access.
+    #define MP_DBG_PERSIST_REG   (RTC->BKP31R)
+    static void mp_debug_port_persist_enable(void) {
+        // The backup registers need the RTC APB clock and the backup-domain write
+        // protection lifted.  Neither requires the RTC itself to be running, which
+        // matters when a board keeps MICROPY_HW_ENABLE_RTC = 0.  The macro name
+        // for "APB clock only, not the counter" differs between STM32 families:
+        // L4 has RTCAPB, H7 rolls it into RTC_CLK (sets RTCAPBEN in APB4ENR).
+        #if defined(__HAL_RCC_RTCAPB_CLK_ENABLE)
+        __HAL_RCC_RTCAPB_CLK_ENABLE();
+        #else
+        __HAL_RCC_RTC_CLK_ENABLE();
+        #endif
+        HAL_PWR_EnableBkUpAccess();
+    }
+#endif
 
 void mp_debug_port_persist_write(uint32_t conditions) {
     mp_debug_port_persist_enable();
@@ -133,7 +171,13 @@ uint32_t mp_debug_port_persist_take(void) {
 }
 
 void mp_debug_port_storage_flush(void) {
+    #if MICROPY_HW_ENABLE_STORAGE
     storage_flush();
+    #else
+    // No filesystem on this board -- there is nothing cached that would need
+    // pushing to the medium.  The .mpy blob our mpy_boot.c writes goes to
+    // flash synchronously.
+    #endif
 }
 
 void mp_debug_port_reset(void) {

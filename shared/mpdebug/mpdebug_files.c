@@ -42,11 +42,14 @@
 #include "py/obj.h"
 #include "py/stream.h"
 #include "py/objstr.h"
-#include "extmod/vfs.h"
 #include "shared/mpdebug/mpdebug_port.h"
 
 #include "shared/mpdebug/mpdebug.h"
 #include "shared/mpdebug/micropython_debugging.h"
+
+#if MICROPY_VFS
+
+#include "extmod/vfs.h"
 
 // Longest path we accept.  Kept small on purpose: this lands in .bss.
 #define MP_DBG_FILE_NAME_MAX (128)
@@ -456,3 +459,29 @@ int mp_debug_file_dispatch(uint32_t cmd, const uint8_t *payload, uint32_t size,
             return -1;
     }
 }
+
+#else // !MICROPY_VFS
+
+// Board has no filesystem (no VFS layer, no storage backend).  The debugger
+// engine still calls these entry points, so we stub them to a "no such
+// command" reply for the dispatch and a no-op for finish_put.  A host that
+// asks the device to accept a File_Put is told the command is unsupported and
+// the F5 flow degrades gracefully.  On single-CDC boards like STM32C071 the
+// deploy path is the .mpy upload via mpy_boot.c anyway, not the file-transfer
+// subsystem.
+
+void mp_debug_file_finish_put(void) {
+    // Nothing was ever opened.
+}
+
+int mp_debug_file_dispatch(uint32_t cmd, const uint8_t *payload, uint32_t size,
+    uint8_t *reply_buf, uint32_t reply_max) {
+    (void)cmd;
+    (void)payload;
+    (void)size;
+    (void)reply_buf;
+    (void)reply_max;
+    return -1;   // engine treats -1 as "not a file command" -> unknown-cmd reply
+}
+
+#endif // MICROPY_VFS
