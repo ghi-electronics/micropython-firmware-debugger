@@ -53,7 +53,7 @@ PCD_HandleTypeDef pcd_fs_handle;
 PCD_HandleTypeDef pcd_hs_handle;
 #endif
 
-#if defined(STM32G0) || defined(STM32H5)
+#if defined(STM32C0) || defined(STM32G0) || defined(STM32H5)
 #define USB_OTG_FS USB_DRD_FS
 #elif !MICROPY_HW_USB_IS_MULTI_OTG
 // The MCU has a single USB device-only instance
@@ -94,7 +94,7 @@ static void mp_usbd_ll_init_fs(void) {
     {
         // Configure USB GPIO's.
 
-        #if defined(STM32G0) || defined(STM32G4)
+        #if defined(STM32C0) || defined(STM32G0) || defined(STM32G4)
 
         // These MCUs don't have an alternate function for USB but rather require
         // the pins to be disconnected from all peripherals, ie put in analog mode.
@@ -148,7 +148,7 @@ static void mp_usbd_ll_init_fs(void) {
         #endif
 
         // Keep USB clock running during sleep or else __WFI() will disable the USB
-        #if defined(STM32G0) || defined(STM32H5)
+        #if defined(STM32C0) || defined(STM32G0) || defined(STM32H5)
         __HAL_RCC_USB_CLK_SLEEP_ENABLE();
         #elif defined(STM32H7)
         __HAL_RCC_USB2_OTG_FS_CLK_SLEEP_ENABLE();
@@ -179,7 +179,7 @@ static void mp_usbd_ll_init_fs(void) {
         #if defined(STM32G0)
         NVIC_SetPriority(USB_UCPD1_2_IRQn, IRQ_PRI_OTG_FS);
         HAL_NVIC_EnableIRQ(USB_UCPD1_2_IRQn);
-        #elif defined(STM32H5)
+        #elif defined(STM32C0) || defined(STM32H5)
         NVIC_SetPriority(USB_DRD_FS_IRQn, IRQ_PRI_OTG_FS);
         HAL_NVIC_EnableIRQ(USB_DRD_FS_IRQn);
         #elif defined(STM32L0)
@@ -577,8 +577,8 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev, int high_speed, const 
         pcd_fs_handle.Init.speed = PCD_SPEED_FULL;
         pcd_fs_handle.Init.lpm_enable = DISABLE;
         pcd_fs_handle.Init.battery_charging_enable = DISABLE;
-        #if MICROPY_HW_USB_IS_MULTI_OTG || defined(STM32G0) || defined(STM32H5)
-        #if !defined(STM32G0) && !defined(STM32H5)
+        #if MICROPY_HW_USB_IS_MULTI_OTG || defined(STM32C0) || defined(STM32G0) || defined(STM32H5)
+        #if !defined(STM32C0) && !defined(STM32G0) && !defined(STM32H5)
         pcd_fs_handle.Init.use_dedicated_ep1 = 0;
         #endif
         pcd_fs_handle.Init.dma_enable = 0;
@@ -588,7 +588,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev, int high_speed, const 
         pcd_fs_handle.Init.vbus_sensing_enable = 1;
         #endif
         #endif
-        #if defined(STM32G0) || defined(STM32H5)
+        #if defined(STM32C0) || defined(STM32G0) || defined(STM32H5)
         pcd_fs_handle.Init.bulk_doublebuffer_enable = DISABLE;
         pcd_fs_handle.Init.iso_singlebuffer_enable = DISABLE;
         #endif

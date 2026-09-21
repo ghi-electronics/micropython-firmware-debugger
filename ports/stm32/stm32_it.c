@@ -315,7 +315,7 @@ void USB_UCPD1_2_IRQHandler(void) {
 }
 #endif
 
-#elif defined(STM32H5)
+#elif defined(STM32C0) || defined(STM32H5)
 
 #if MICROPY_HW_USB_FS
 void USB_DRD_FS_IRQHandler(void) {

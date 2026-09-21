@@ -147,6 +147,26 @@ void SystemClock_Config(void) {
     // SYSCLK source = HSISYS (already selected by default after reset), so no CFGR change needed.
     SystemCoreClockUpdate();
     powerctrl_config_systick();
+
+    #if MICROPY_HW_ENABLE_USB
+    // The USB peripheral needs a dedicated 48 MHz clock (HSIUSB48).  On
+    // STM32C071 this is a SEPARATE oscillator from HSI (which feeds HSISYS)
+    // -- RCC_CR bit 22 (HSIUSB48ON) turns it on and bit 23 (HSIUSB48RDY)
+    // signals stability.  Without this, USB enumerates fine after a warm
+    // start from CubeProgrammer (bit stayed set from before) but fails on
+    // every cold reset (bit is off, USB has no clock, no D+ pull-up).
+    RCC->APBENR2 |= RCC_APBENR2_SYSCFGEN;
+    RCC->CR |= RCC_CR_HSIUSB48ON;
+    while ((RCC->CR & RCC_CR_HSIUSB48RDY) == 0) {
+        // Wait for HSIUSB48 to stabilise.
+    }
+    RCC->CCIPR2 &= ~RCC_CCIPR2_USBSEL; // 0 = HSIUSB48
+
+    __HAL_RCC_CRS_CLK_ENABLE();
+    CRS->CFGR = 2 << CRS_CFGR_SYNCSRC_Pos | 0x22 << CRS_CFGR_FELIM_Pos
+        | __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000) << CRS_CFGR_RELOAD_Pos;
+    CRS->CR = 0x40 << CRS_CR_TRIM_Pos | CRS_CR_AUTOTRIMEN | CRS_CR_CEN;
+    #endif
 }
 
 #elif defined(STM32G0)

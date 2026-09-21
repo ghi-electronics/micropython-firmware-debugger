@@ -438,7 +438,7 @@ void mp_usbd_ll_init(void);
 #define MICROPY_HW_MAX_UART (4)
 #define MICROPY_HW_MAX_LPUART (0)
 
-// TinyUSB doesn't support STM32C0; USB not used in this port.
+// TinyUSB doesn't support STM32C0; USB uses the legacy ST device stack.
 #define CFG_TUSB_MCU OPT_MCU_NONE
 
 // Configuration for STM32G0 series
@@ -790,9 +790,9 @@ void mp_usbd_ll_init(void);
 #endif
 
 // Whether the USB peripheral is device-only, or multiple OTG
-// For STM32G0 and STM32H5 the USB peripheral supports device and host mode,
-// but otherwise acts like a non-multi-OTG peripheral.
-#if defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32L432xx) || defined(STM32L452xx) || defined(STM32WB)
+// For STM32C0, STM32G0 and STM32H5 the USB peripheral supports device and host
+// mode, but otherwise acts like a non-multi-OTG peripheral.
+#if defined(STM32C0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32L432xx) || defined(STM32L452xx) || defined(STM32WB)
 #define MICROPY_HW_USB_IS_MULTI_OTG (0)
 #else
 #define MICROPY_HW_USB_IS_MULTI_OTG (1)

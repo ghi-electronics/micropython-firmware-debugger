@@ -59,7 +59,7 @@
 #endif
 
 // Maximum number of endpoints (excluding EP0)
-#if defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32WB)
+#if defined(STM32C0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32L0) || defined(STM32L1) || defined(STM32WB)
 #define MAX_ENDPOINT(dev_id) (7)
 #elif defined(STM32L4)
 #define MAX_ENDPOINT(dev_id) (5)
@@ -653,15 +653,25 @@ usbd_cdc_itf_t *usb_vcp_get_cdc_itf(int idx) {
 
 static bool pyb_usb_vcp_irq_scheduled[MICROPY_HW_USB_CDC_NUM];
 
+// A board can opt out of the default CDC0-to-REPL wiring by defining
+// MICROPY_HW_USB_CDC_REPL_ATTACH = 0. Boards that reserve the single CDC
+// interface for a private wire protocol (e.g. the debugger channel) must
+// keep it detached from the REPL.
+#ifndef MICROPY_HW_USB_CDC_REPL_ATTACH
+#define MICROPY_HW_USB_CDC_REPL_ATTACH (1)
+#endif
+
 static void pyb_usb_vcp_init0(void) {
     for (size_t i = 0; i < MICROPY_HW_USB_CDC_NUM; ++i) {
         MP_STATE_PORT(pyb_usb_vcp_irq)[i] = mp_const_none;
         pyb_usb_vcp_irq_scheduled[i] = false;
     }
 
+    #if MICROPY_HW_USB_CDC_REPL_ATTACH && MICROPY_PY_OS_DUPTERM
     // Activate USB_VCP(0) on dupterm slot 1 for the REPL
     MP_STATE_VM(dupterm_objs[1]) = MP_OBJ_FROM_PTR(&pyb_usb_vcp_obj[0]);
     usb_vcp_attach_to_repl(&pyb_usb_vcp_obj[0], true);
+    #endif
 }
 
 static mp_obj_t pyb_usb_vcp_irq_run(mp_obj_t self_in) {
