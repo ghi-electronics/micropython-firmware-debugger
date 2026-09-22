@@ -469,9 +469,23 @@ static void mp_debug_output_chunk(const char *str, uint32_t len) {
 }
 
 void mp_debug_stdout(const char *str, size_t len) {
+    // Boards with a REPL (SC13048Q, ESP32, RP2040) drop output when the host
+    // is not attached -- their REPL channel is the primary output and the
+    // debug channel is dedicated to the debugger protocol.
+    //
+    // Single-channel boards (STM32C071) have no REPL: the debug channel is
+    // the only path.  Dropping when unattached would lose startup prints
+    // during the attach race, so those boards define
+    // MP_DEBUG_STDOUT_ALWAYS_SEND to skip this gate.
+#ifndef MP_DEBUG_STDOUT_ALWAYS_SEND
     if (!(mp_debug_conditions & MP_DBG_COND_ATTACHED) || len == 0) {
         return;
     }
+#else
+    if (len == 0) {
+        return;
+    }
+#endif
     // A send must never re-enter here. Nothing on this path prints today, but
     // an assert or error message added to the transmit path later would
     // otherwise recurse until the stack gave out.

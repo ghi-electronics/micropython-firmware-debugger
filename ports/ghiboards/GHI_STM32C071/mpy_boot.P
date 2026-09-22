@@ -1,29 +1,48 @@
 build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  ../../ghiboards/GHI_STM32C071/mpy_boot.c usbdev/core/inc/usbd_core.h \
- usbd_conf.h v:\lib\gcc\arm-none-eabi\12.2.1\include\stdint.h \
- v:\arm-none-eabi\include\stdint.h \
- v:\arm-none-eabi\include\machine\_default_types.h \
- v:\arm-none-eabi\include\sys\features.h \
- v:\arm-none-eabi\include\_newlib_version.h \
- v:\arm-none-eabi\include\sys\_intsup.h \
- v:\arm-none-eabi\include\sys\_stdint.h v:\arm-none-eabi\include\stdio.h \
- v:\arm-none-eabi\include\_ansi.h v:\arm-none-eabi\include\newlib.h \
- v:\arm-none-eabi\include\sys\config.h \
- v:\arm-none-eabi\include\machine\ieeefp.h \
- v:\arm-none-eabi\include\sys\cdefs.h \
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stddef.h \
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stdarg.h \
- v:\arm-none-eabi\include\sys\reent.h v:\arm-none-eabi\include\_ansi.h \
- v:\arm-none-eabi\include\sys\_types.h \
- v:\arm-none-eabi\include\machine\_types.h \
- v:\arm-none-eabi\include\sys\lock.h v:\arm-none-eabi\include\sys\stdio.h \
- v:\arm-none-eabi\include\stdlib.h \
- v:\arm-none-eabi\include\machine\stdlib.h \
- v:\arm-none-eabi\include\alloca.h v:\arm-none-eabi\include\string.h \
- v:\arm-none-eabi\include\sys\_locale.h \
- v:\arm-none-eabi\include\strings.h v:\arm-none-eabi\include\sys\string.h \
- ../../py/mpconfig.h \
- v:\lib\gcc\arm-none-eabi\12.2.1\include-fixed\limits.h mpconfigport.h \
+ usbd_conf.h c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdint.h \
+ c:\gcc\arm-none-eabi\include\stdint.h \
+ c:\gcc\arm-none-eabi\include\machine\_default_types.h \
+ c:\gcc\arm-none-eabi\include\sys\features.h \
+ c:\gcc\arm-none-eabi\include\_newlib_version.h \
+ c:\gcc\arm-none-eabi\include\sys\_intsup.h \
+ c:\gcc\arm-none-eabi\include\sys\_stdint.h \
+ c:\gcc\arm-none-eabi\include\stdio.h \
+ c:\gcc\arm-none-eabi\include\_ansi.h \
+ c:\gcc\arm-none-eabi\include\newlib.h \
+ c:\gcc\arm-none-eabi\include\sys\config.h \
+ c:\gcc\arm-none-eabi\include\machine\ieeefp.h \
+ c:\gcc\arm-none-eabi\include\sys\cdefs.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stddef.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdarg.h \
+ c:\gcc\arm-none-eabi\include\sys\reent.h \
+ c:\gcc\arm-none-eabi\include\_ansi.h \
+ c:\gcc\arm-none-eabi\include\sys\_types.h \
+ c:\gcc\arm-none-eabi\include\machine\_types.h \
+ c:\gcc\arm-none-eabi\include\sys\lock.h \
+ c:\gcc\arm-none-eabi\include\sys\types.h \
+ c:\gcc\arm-none-eabi\include\machine\endian.h \
+ c:\gcc\arm-none-eabi\include\machine\_endian.h \
+ c:\gcc\arm-none-eabi\include\sys\select.h \
+ c:\gcc\arm-none-eabi\include\sys\_sigset.h \
+ c:\gcc\arm-none-eabi\include\sys\_timeval.h \
+ c:\gcc\arm-none-eabi\include\sys\timespec.h \
+ c:\gcc\arm-none-eabi\include\sys\_timespec.h \
+ c:\gcc\arm-none-eabi\include\sys\_pthreadtypes.h \
+ c:\gcc\arm-none-eabi\include\sys\sched.h \
+ c:\gcc\arm-none-eabi\include\machine\types.h \
+ c:\gcc\arm-none-eabi\include\sys\stdio.h \
+ c:\gcc\arm-none-eabi\include\stdlib.h \
+ c:\gcc\arm-none-eabi\include\machine\stdlib.h \
+ c:\gcc\arm-none-eabi\include\alloca.h \
+ c:\gcc\arm-none-eabi\include\string.h \
+ c:\gcc\arm-none-eabi\include\sys\_locale.h \
+ c:\gcc\arm-none-eabi\include\strings.h \
+ c:\gcc\arm-none-eabi\include\sys\string.h ../../py/mpconfig.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include-fixed\limits.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include-fixed\syslimits.h \
+ c:\gcc\arm-none-eabi\include\limits.h \
+ c:\gcc\arm-none-eabi\include\sys\syslimits.h mpconfigport.h \
  ../../ghiboards/GHI_STM32C071/mpconfigboard.h mpconfigboard_common.h \
  ../../lib/stm32lib/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal.h \
  ../../lib/stm32lib/STM32C0xx_HAL_Driver/Inc/stm32c0xx_ll_system.h \
@@ -33,7 +52,7 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_version.h \
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_compiler.h \
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_gcc.h \
- v:\lib\gcc\arm-none-eabi\12.2.1\include\arm_acle.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\arm_acle.h \
  ../../lib/CMSIS_6/CMSIS/Core/Include/m-profile/cmsis_gcc_m.h \
  ../../lib/CMSIS_6/CMSIS/Core/Include/m-profile/armv7m_mpu.h \
  ../../lib/stm32lib/CMSIS/STM32C0xx/Include/system_stm32c0xx.h \
@@ -95,9 +114,9 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  usbdev/core/inc/usbd_def.h usbdev/core/inc/usbd_ioreq.h \
  usbd_cdc_interface.h ../../py/runtime.h ../../py/mpstate.h \
  ../../py/mpthread.h ../../py/misc.h \
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stdbool.h \
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdbool.h \
  build-GHI_STM32C071/genhdr/compressed.data.h ../../py/nlr.h \
- v:\arm-none-eabi\include\assert.h ../../py/obj.h ../../py/qstr.h \
+ c:\gcc\arm-none-eabi\include\assert.h ../../py/obj.h ../../py/qstr.h \
  build-GHI_STM32C071/genhdr/qstrdefs.generated.h ../../py/mpprint.h \
  ../../py/runtime0.h ../../py/objlist.h ../../py/objexcept.h \
  ../../py/objtuple.h build-GHI_STM32C071/genhdr/root_pointers.h \
@@ -106,33 +125,53 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  ../../py/mphal.h mphalport.h pin.h pin_defs_stm32.h \
  build-GHI_STM32C071/genhdr/pins.h usbd_conf.h ../../py/ringbuf.h \
  ../../shared/runtime/interrupt_char.h irq.h \
- ../../shared/runtime/pyexec.h boardctrl.h
+ ../../shared/runtime/pyexec.h boardctrl.h \
+ ../../shared/mpdebug/micropython_debugging.h
 \ :
  ../../ghiboards/GHI_STM32C071/mpy_boot.c usbdev/core/inc/usbd_core.h \ :
- usbd_conf.h v:\lib\gcc\arm-none-eabi\12.2.1\include\stdint.h \ :
- v:\arm-none-eabi\include\stdint.h \ :
- v:\arm-none-eabi\include\machine\_default_types.h \ :
- v:\arm-none-eabi\include\sys\features.h \ :
- v:\arm-none-eabi\include\_newlib_version.h \ :
- v:\arm-none-eabi\include\sys\_intsup.h \ :
- v:\arm-none-eabi\include\sys\_stdint.h v:\arm-none-eabi\include\stdio.h \ :
- v:\arm-none-eabi\include\_ansi.h v:\arm-none-eabi\include\newlib.h \ :
- v:\arm-none-eabi\include\sys\config.h \ :
- v:\arm-none-eabi\include\machine\ieeefp.h \ :
- v:\arm-none-eabi\include\sys\cdefs.h \ :
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stddef.h \ :
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stdarg.h \ :
- v:\arm-none-eabi\include\sys\reent.h v:\arm-none-eabi\include\_ansi.h \ :
- v:\arm-none-eabi\include\sys\_types.h \ :
- v:\arm-none-eabi\include\machine\_types.h \ :
- v:\arm-none-eabi\include\sys\lock.h v:\arm-none-eabi\include\sys\stdio.h \ :
- v:\arm-none-eabi\include\stdlib.h \ :
- v:\arm-none-eabi\include\machine\stdlib.h \ :
- v:\arm-none-eabi\include\alloca.h v:\arm-none-eabi\include\string.h \ :
- v:\arm-none-eabi\include\sys\_locale.h \ :
- v:\arm-none-eabi\include\strings.h v:\arm-none-eabi\include\sys\string.h \ :
- ../../py/mpconfig.h \ :
- v:\lib\gcc\arm-none-eabi\12.2.1\include-fixed\limits.h mpconfigport.h \ :
+ usbd_conf.h c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdint.h \ :
+ c:\gcc\arm-none-eabi\include\stdint.h \ :
+ c:\gcc\arm-none-eabi\include\machine\_default_types.h \ :
+ c:\gcc\arm-none-eabi\include\sys\features.h \ :
+ c:\gcc\arm-none-eabi\include\_newlib_version.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_intsup.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_stdint.h \ :
+ c:\gcc\arm-none-eabi\include\stdio.h \ :
+ c:\gcc\arm-none-eabi\include\_ansi.h \ :
+ c:\gcc\arm-none-eabi\include\newlib.h \ :
+ c:\gcc\arm-none-eabi\include\sys\config.h \ :
+ c:\gcc\arm-none-eabi\include\machine\ieeefp.h \ :
+ c:\gcc\arm-none-eabi\include\sys\cdefs.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stddef.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdarg.h \ :
+ c:\gcc\arm-none-eabi\include\sys\reent.h \ :
+ c:\gcc\arm-none-eabi\include\_ansi.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_types.h \ :
+ c:\gcc\arm-none-eabi\include\machine\_types.h \ :
+ c:\gcc\arm-none-eabi\include\sys\lock.h \ :
+ c:\gcc\arm-none-eabi\include\sys\types.h \ :
+ c:\gcc\arm-none-eabi\include\machine\endian.h \ :
+ c:\gcc\arm-none-eabi\include\machine\_endian.h \ :
+ c:\gcc\arm-none-eabi\include\sys\select.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_sigset.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_timeval.h \ :
+ c:\gcc\arm-none-eabi\include\sys\timespec.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_timespec.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_pthreadtypes.h \ :
+ c:\gcc\arm-none-eabi\include\sys\sched.h \ :
+ c:\gcc\arm-none-eabi\include\machine\types.h \ :
+ c:\gcc\arm-none-eabi\include\sys\stdio.h \ :
+ c:\gcc\arm-none-eabi\include\stdlib.h \ :
+ c:\gcc\arm-none-eabi\include\machine\stdlib.h \ :
+ c:\gcc\arm-none-eabi\include\alloca.h \ :
+ c:\gcc\arm-none-eabi\include\string.h \ :
+ c:\gcc\arm-none-eabi\include\sys\_locale.h \ :
+ c:\gcc\arm-none-eabi\include\strings.h \ :
+ c:\gcc\arm-none-eabi\include\sys\string.h ../../py/mpconfig.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include-fixed\limits.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include-fixed\syslimits.h \ :
+ c:\gcc\arm-none-eabi\include\limits.h \ :
+ c:\gcc\arm-none-eabi\include\sys\syslimits.h mpconfigport.h \ :
  ../../ghiboards/GHI_STM32C071/mpconfigboard.h mpconfigboard_common.h \ :
  ../../lib/stm32lib/STM32C0xx_HAL_Driver/Inc/stm32c0xx_hal.h \ :
  ../../lib/stm32lib/STM32C0xx_HAL_Driver/Inc/stm32c0xx_ll_system.h \ :
@@ -142,7 +181,7 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_version.h \ :
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_compiler.h \ :
  ../../lib/CMSIS_6/CMSIS/Core/Include/cmsis_gcc.h \ :
- v:\lib\gcc\arm-none-eabi\12.2.1\include\arm_acle.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\arm_acle.h \ :
  ../../lib/CMSIS_6/CMSIS/Core/Include/m-profile/cmsis_gcc_m.h \ :
  ../../lib/CMSIS_6/CMSIS/Core/Include/m-profile/armv7m_mpu.h \ :
  ../../lib/stm32lib/CMSIS/STM32C0xx/Include/system_stm32c0xx.h \ :
@@ -204,9 +243,9 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  usbdev/core/inc/usbd_def.h usbdev/core/inc/usbd_ioreq.h \ :
  usbd_cdc_interface.h ../../py/runtime.h ../../py/mpstate.h \ :
  ../../py/mpthread.h ../../py/misc.h \ :
- v:\lib\gcc\arm-none-eabi\12.2.1\include\stdbool.h \ :
+ c:\gcc\lib\gcc\arm-none-eabi\8.3.1\include\stdbool.h \ :
  build-GHI_STM32C071/genhdr/compressed.data.h ../../py/nlr.h \ :
- v:\arm-none-eabi\include\assert.h ../../py/obj.h ../../py/qstr.h \ :
+ c:\gcc\arm-none-eabi\include\assert.h ../../py/obj.h ../../py/qstr.h \ :
  build-GHI_STM32C071/genhdr/qstrdefs.generated.h ../../py/mpprint.h \ :
  ../../py/runtime0.h ../../py/objlist.h ../../py/objexcept.h \ :
  ../../py/objtuple.h build-GHI_STM32C071/genhdr/root_pointers.h \ :
@@ -215,4 +254,5 @@ build-GHI_STM32C071/../../ghiboards/GHI_STM32C071/mpy_boot.o: \
  ../../py/mphal.h mphalport.h pin.h pin_defs_stm32.h \ :
  build-GHI_STM32C071/genhdr/pins.h usbd_conf.h ../../py/ringbuf.h \ :
  ../../shared/runtime/interrupt_char.h irq.h \ :
- ../../shared/runtime/pyexec.h boardctrl.h :
+ ../../shared/runtime/pyexec.h boardctrl.h \ :
+ ../../shared/mpdebug/micropython_debugging.h :

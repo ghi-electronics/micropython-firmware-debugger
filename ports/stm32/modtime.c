@@ -28,6 +28,7 @@
 #include "shared/timeutils/timeutils.h"
 #include "rtc.h"
 
+#if MICROPY_PY_TIME_GMTIME_LOCALTIME_MKTIME
 // Get the localtime.
 static void mp_time_localtime_get(timeutils_struct_time_t *tm) {
     // get current date and time
@@ -46,7 +47,9 @@ static void mp_time_localtime_get(timeutils_struct_time_t *tm) {
     tm->tm_wday = date.WeekDay - 1;
     tm->tm_yday = timeutils_year_day(tm->tm_year, date.Month, date.Date);
 }
+#endif
 
+#if MICROPY_PY_TIME_TIME_TIME_NS
 // Returns the number of seconds, as an integer, since 1/1/2000.
 static mp_obj_t mp_time_time_get(void) {
     // get date and time
@@ -58,3 +61,4 @@ static mp_obj_t mp_time_time_get(void) {
     HAL_RTC_GetDate(&RTCHandle, &date, RTC_FORMAT_BIN);
     return timeutils_obj_from_timestamp(timeutils_seconds_since_epoch(2000 + date.Year, date.Month, date.Date, time.Hours, time.Minutes, time.Seconds));
 }
+#endif
