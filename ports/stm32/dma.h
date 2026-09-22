@@ -160,6 +160,16 @@ extern const dma_descr_t dma_SPI_4_TX;
 extern const dma_descr_t dma_SPI_5_RX;
 extern const dma_descr_t dma_SPI_5_TX;
 
+#elif defined(STM32C0)
+
+// STM32C0 does not implement DMA in this port; these are link-only stubs
+// (defined in dma.c C0 branch) referenced by spi.c and pyb_i2c.c when the
+// corresponding pins are declared in the board config.
+extern const dma_descr_t dma_SPI_1_RX;
+extern const dma_descr_t dma_SPI_1_TX;
+extern const dma_descr_t dma_I2C_1_RX;
+extern const dma_descr_t dma_I2C_1_TX;
+
 #endif
 
 // API that configures the DMA via the HAL.

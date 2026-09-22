@@ -601,6 +601,15 @@ static HAL_StatusTypeDef spi_wait_dma_finished(const spi_t *spi, uint32_t t_star
     return HAL_OK;
 }
 
+// STM32C0 has DMA stubbed out (no descriptors, no real DMA channels wired),
+// so every transfer must use the polling HAL API.  Rather than #ifdef each
+// call site, wrap the "use polling" test in a helper macro.
+#if defined(STM32C0)
+#define SPI_FORCE_POLL (1)
+#else
+#define SPI_FORCE_POLL (0)
+#endif
+
 void spi_transfer(const spi_t *self, size_t len, const uint8_t *src, uint8_t *dest, uint32_t timeout) {
     // Note: there seems to be a problem sending 1 byte using DMA the first
     // time directly after the SPI/DMA is initialised.  The cause of this is
@@ -614,7 +623,7 @@ void spi_transfer(const spi_t *self, size_t len, const uint8_t *src, uint8_t *de
 
     if (dest == NULL) {
         // send only
-        if (len == 1 || query_irq() == IRQ_STATE_DISABLED) {
+        if (SPI_FORCE_POLL || len == 1 || query_irq() == IRQ_STATE_DISABLED) {
             status = HAL_SPI_Transmit(self->spi, (uint8_t *)src, len, timeout);
         } else {
             DMA_HandleTypeDef tx_dma;
@@ -640,7 +649,7 @@ void spi_transfer(const spi_t *self, size_t len, const uint8_t *src, uint8_t *de
         }
     } else if (src == NULL) {
         // receive only
-        if (len == 1 || query_irq() == IRQ_STATE_DISABLED) {
+        if (SPI_FORCE_POLL || len == 1 || query_irq() == IRQ_STATE_DISABLED) {
             status = HAL_SPI_Receive(self->spi, dest, len, timeout);
         } else {
             DMA_HandleTypeDef tx_dma, rx_dma;
@@ -676,7 +685,7 @@ void spi_transfer(const spi_t *self, size_t len, const uint8_t *src, uint8_t *de
         }
     } else {
         // send and receive
-        if (len == 1 || query_irq() == IRQ_STATE_DISABLED) {
+        if (SPI_FORCE_POLL || len == 1 || query_irq() == IRQ_STATE_DISABLED) {
             status = HAL_SPI_TransmitReceive(self->spi, (uint8_t *)src, dest, len, timeout);
         } else {
             DMA_HandleTypeDef tx_dma, rx_dma;

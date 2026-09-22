@@ -1,27 +1,27 @@
 Port ,Pin ,AF0 ,AF1 ,AF2 ,AF3 ,AF4 ,AF5 ,AF6 ,AF7 ,AF8 ,AF9 ,AF10 ,AF11 ,AF12 ,AF13 ,AF14 ,AF15 ,ADC
      ,    ,AF0 ,AF1 ,AF2 ,AF3 ,AF4 ,AF5 ,AF6 ,AF7 ,AF8 ,AF9 ,AF10 ,AF11 ,AF12 ,AF13 ,AF14 ,AF15 ,ADC
 PortA,PA0 ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN0
-PortA,PA1 ,    ,    ,    ,    ,    ,    ,I2C1_SMBA,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN1
-PortA,PA2 ,    ,USART2_TX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN2
+PortA,PA1 ,SPI1_SCK,    ,    ,    ,    ,    ,I2C1_SMBA,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN1
+PortA,PA2 ,SPI1_MOSI,USART2_TX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN2
 PortA,PA3 ,    ,USART2_RX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN3
-PortA,PA4 ,    ,    ,    ,    ,TIM14_CH1,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN4
-PortA,PA5 ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN5
-PortA,PA6 ,    ,TIM3_CH1,TIM1_BKIN,    ,    ,TIM16_CH1,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,ADC1_IN6
-PortA,PA7 ,    ,TIM3_CH2,TIM1_CH1N,    ,TIM14_CH1,TIM17_CH1,    ,    ,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,ADC1_IN7
+PortA,PA4 ,SPI1_NSS,    ,    ,    ,TIM14_CH1,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN4
+PortA,PA5 ,SPI1_SCK,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN5
+PortA,PA6 ,SPI1_MISO,TIM3_CH1,TIM1_BKIN,    ,    ,TIM16_CH1,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,ADC1_IN6
+PortA,PA7 ,SPI1_MOSI,TIM3_CH2,TIM1_CH1N,    ,TIM14_CH1,TIM17_CH1,    ,    ,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,ADC1_IN7
 PortA,PA8 ,    ,    ,TIM1_CH1,    ,    ,    ,    ,    ,I2C2_SMBA,    ,    ,    ,    ,    ,    ,    ,
 PortA,PA9 ,    ,USART1_TX,TIM1_CH2,    ,    ,    ,I2C1_SCL,    ,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,
 PortA,PA10,    ,USART1_RX,TIM1_CH3,    ,    ,TIM17_BKIN,I2C1_SDA,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,
-PortA,PA11,    ,USART1_CTS,TIM1_CH4,    ,    ,TIM1_BKIN2,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,    ,    ,
-PortA,PA12,    ,USART1_RTS,TIM1_ETR,    ,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,    ,    ,
+PortA,PA11,SPI1_MISO,USART1_CTS,TIM1_CH4,    ,    ,TIM1_BKIN2,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,    ,    ,
+PortA,PA12,SPI1_MOSI,USART1_RTS,TIM1_ETR,    ,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,    ,    ,
 PortA,PA13,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,
 PortA,PA14,    ,USART2_TX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,
-PortA,PA15,    ,USART2_RX,    ,    ,    ,    ,    ,    ,I2C2_SMBA,    ,    ,    ,    ,    ,    ,    ,
-PortB,PB0 ,    ,TIM3_CH3,TIM1_CH2N,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN8
+PortA,PA15,SPI1_NSS,USART2_RX,    ,    ,    ,    ,    ,    ,I2C2_SMBA,    ,    ,    ,    ,    ,    ,    ,
+PortB,PB0 ,SPI1_NSS,TIM3_CH3,TIM1_CH2N,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN8
 PortB,PB1 ,TIM14_CH1,TIM3_CH4,TIM1_CH3N,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN9
 PortB,PB2 ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN10
-PortB,PB3 ,    ,TIM1_CH2,    ,    ,USART1_RTS,    ,    ,    ,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,
-PortB,PB4 ,    ,TIM3_CH1,    ,    ,USART1_CTS,TIM17_BKIN,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,
-PortB,PB5 ,    ,TIM3_CH2,TIM16_BKIN,    ,    ,    ,I2C1_SMBA,    ,    ,    ,    ,    ,    ,    ,    ,    ,
+PortB,PB3 ,SPI1_SCK,TIM1_CH2,    ,    ,USART1_RTS,    ,    ,    ,I2C2_SCL,    ,    ,    ,    ,    ,    ,    ,
+PortB,PB4 ,SPI1_MISO,TIM3_CH1,    ,    ,USART1_CTS,TIM17_BKIN,    ,    ,I2C2_SDA,    ,    ,    ,    ,    ,    ,    ,
+PortB,PB5 ,SPI1_MOSI,TIM3_CH2,TIM16_BKIN,    ,    ,    ,I2C1_SMBA,    ,    ,    ,    ,    ,    ,    ,    ,    ,
 PortB,PB6 ,USART1_TX,TIM1_CH3,TIM16_CH1N,    ,    ,    ,I2C1_SCL,    ,    ,    ,    ,    ,    ,    ,    ,    ,
 PortB,PB7 ,USART1_RX,    ,TIM17_CH1N,    ,    ,    ,I2C1_SDA,    ,    ,    ,    ,    ,    ,    ,    ,    ,
 PortB,PB8 ,    ,    ,TIM16_CH1,    ,    ,    ,I2C1_SCL,    ,    ,    ,    ,    ,    ,    ,    ,    ,

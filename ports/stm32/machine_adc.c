@@ -31,7 +31,7 @@
 #include "py/runtime.h"
 #include "adc.h"
 
-#if defined(STM32F0) || defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32N6) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
+#if defined(STM32F0) || defined(STM32G0) || defined(STM32C0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32N6) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
 #define ADC_V2 (1)
 #else
 #define ADC_V2 (0)
@@ -45,7 +45,7 @@
 #define ADCx_COMMON __LL_ADC_COMMON_INSTANCE(0)
 #endif
 
-#if defined(STM32F0) || defined(STM32G0) || defined(STM32L0) || defined(STM32L1) || defined(STM32WL)
+#if defined(STM32F0) || defined(STM32G0) || defined(STM32C0) || defined(STM32L0) || defined(STM32L1) || defined(STM32WL)
 #define ADC_STAB_DELAY_US (1)
 #define ADC_TEMPSENSOR_DELAY_US (10)
 #elif defined(STM32G4)
@@ -77,7 +77,7 @@
 #elif defined(STM32H7)
 #define ADC_SAMPLETIME_DEFAULT      ADC_SAMPLETIME_8CYCLES_5
 #define ADC_SAMPLETIME_DEFAULT_INT  ADC_SAMPLETIME_387CYCLES_5
-#elif defined(STM32G0) || defined(STM32L0) || defined(STM32WL)
+#elif defined(STM32G0) || defined(STM32C0) || defined(STM32L0) || defined(STM32WL)
 #define ADC_SAMPLETIME_DEFAULT      ADC_SAMPLETIME_12CYCLES_5
 #define ADC_SAMPLETIME_DEFAULT_INT  ADC_SAMPLETIME_160CYCLES_5
 #elif defined(STM32L1)
@@ -198,7 +198,7 @@ static const uint8_t adc_cr_to_bits_table[] = {12, 10, 8, 6};
 
 void adc_config(ADC_TypeDef *adc, uint32_t bits) {
     // Configure ADC clock source and enable ADC clock
-    #if defined(STM32G0) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL)
+    #if defined(STM32G0) || defined(STM32C0) || defined(STM32L4) || defined(STM32WB) || defined(STM32WL)
     __HAL_RCC_ADC_CONFIG(RCC_ADCCLKSOURCE_SYSCLK);
     __HAL_RCC_ADC_CLK_ENABLE();
     #else
@@ -263,12 +263,12 @@ void adc_config(ADC_TypeDef *adc, uint32_t bits) {
     }
     #endif
 
-    #if defined(STM32G0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
+    #if defined(STM32G0) || defined(STM32C0) || defined(STM32G4) || defined(STM32H5) || defined(STM32H7) || defined(STM32L0) || defined(STM32L4) || defined(STM32U5) || defined(STM32WB) || defined(STM32WL)
     if (!(adc->CR & ADC_CR_ADVREGEN)) {
         adc->CR = ADC_CR_ADVREGEN; // enable VREG
         #if defined(STM32H7)
         mp_hal_delay_us(10); // T_ADCVREG_STUP
-        #elif defined(STM32G0) || defined(STM32G4) || defined(STM32L4) || defined(STM32WB)
+        #elif defined(STM32G0) || defined(STM32C0) || defined(STM32G4) || defined(STM32L4) || defined(STM32WB)
         mp_hal_delay_us(20); // T_ADCVREG_STUP
         #endif
     }
@@ -277,7 +277,7 @@ void adc_config(ADC_TypeDef *adc, uint32_t bits) {
     #if ADC_V2
     if (!(adc->CR & ADC_CR_ADEN)) {
         // ADC isn't enabled so calibrate it now
-        #if defined(STM32F0) || defined(STM32G0) || defined(STM32L0) || defined(STM32WL)
+        #if defined(STM32F0) || defined(STM32G0) || defined(STM32C0) || defined(STM32L0) || defined(STM32WL)
         LL_ADC_StartCalibration(adc);
         #elif defined(STM32G4) || defined(STM32H5) || defined(STM32L4) || defined(STM32U5) || defined(STM32WB)
         LL_ADC_StartCalibration(adc, LL_ADC_SINGLE_ENDED);
@@ -350,7 +350,7 @@ void adc_config(ADC_TypeDef *adc, uint32_t bits) {
 }
 
 static int adc_get_bits(ADC_TypeDef *adc) {
-    #if defined(STM32F0) || defined(STM32G0) || defined(STM32L0) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
+    #if defined(STM32F0) || defined(STM32G0) || defined(STM32C0) || defined(STM32L0) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
     uint32_t res = (adc->CFGR1 & ADC_CFGR1_RES) >> ADC_CFGR1_RES_Pos;
     #elif defined(STM32F4) || defined(STM32F7) || defined(STM32L1)
     uint32_t res = (adc->CR1 & ADC_CR1_RES) >> ADC_CR1_RES_Pos;
@@ -388,7 +388,7 @@ static bool adc_config_channel(ADC_TypeDef *adc, uint32_t channel, uint32_t samp
     }
     #endif
 
-    #if defined(STM32F0) || defined(STM32G0) || defined(STM32L0)
+    #if defined(STM32F0) || defined(STM32G0) || defined(STM32C0) || defined(STM32L0)
 
     if (channel == ADC_CHANNEL_VREFINT) {
         ADC1_COMMON->CCR |= ADC_CCR_VREFEN;
@@ -400,13 +400,13 @@ static bool adc_config_channel(ADC_TypeDef *adc, uint32_t channel, uint32_t samp
         ADC1_COMMON->CCR |= ADC_CCR_VBATEN;
     #endif
     }
-    #if defined(STM32G0)
+    #if defined(STM32G0) || defined(STM32C0)
     adc->SMPR = sample_time << ADC_SMPR_SMP1_Pos; // select sample time from SMP1 (default)
     #else
     adc->SMPR = sample_time << ADC_SMPR_SMP_Pos; // select sample time
     #endif
 
-    #if defined(STM32G0)
+    #if defined(STM32G0) || defined(STM32C0)
     if (__LL_ADC_IS_CHANNEL_INTERNAL(channel)) {
         channel = __LL_ADC_CHANNEL_TO_DECIMAL_NB(channel);
     }

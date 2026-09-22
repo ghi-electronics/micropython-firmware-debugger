@@ -37,6 +37,18 @@
 
 #if defined(STM32C0)
 // STM32C0 port does not use the DMA driver; provide only the required stubs.
+//
+// spi.c and pyb_i2c.c reference dma_SPI_1_TX/RX and dma_I2C_1_TX/RX by name
+// when their corresponding MICROPY_HW_*_SCK/SCL pins are defined, so we need
+// those symbols to exist for linking.  They are never dereferenced because
+// the dma_init/dma_deinit calls below are all no-ops and spi.c is patched
+// (elsewhere in this port) to take the polling path on STM32C0.
+struct _dma_descr_t { uint32_t stub; };
+const dma_descr_t dma_SPI_1_TX = { 0 };
+const dma_descr_t dma_SPI_1_RX = { 0 };
+const dma_descr_t dma_I2C_1_TX = { 0 };
+const dma_descr_t dma_I2C_1_RX = { 0 };
+
 void dma_init_handle(DMA_HandleTypeDef *dma, const dma_descr_t *dma_descr, uint32_t dir, void *data) {
     (void)dma; (void)dma_descr; (void)dir; (void)data;
 }

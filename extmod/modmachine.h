@@ -101,6 +101,10 @@
             return MP_OBJ_TYPE_GET_SLOT(&mp_machine_soft_i2c_type, make_new)(&mp_machine_soft_i2c_type, n_args, n_kw, all_args); \
         } \
     } while (0)
+#else
+// Legacy SoftI2C construction path is disabled when MICROPY_PY_MACHINE_SOFTI2C
+// is off, but callers still invoke the macro unconditionally -- make it a no-op.
+#define MP_MACHINE_I2C_CHECK_FOR_LEGACY_SOFTI2C_CONSTRUCTION(n_args, n_kw, all_args) do { } while (0)
 #endif
 
 #if MICROPY_PY_MACHINE_SOFTSPI
@@ -116,6 +120,10 @@
             return MP_OBJ_TYPE_GET_SLOT(&mp_machine_soft_spi_type, make_new)(&mp_machine_soft_spi_type, n_args, n_kw, all_args); \
         } \
     } while (0)
+#else
+// Legacy SoftSPI construction path is disabled when MICROPY_PY_MACHINE_SOFTSPI
+// is off, but callers still invoke the macro unconditionally -- make it a no-op.
+#define MP_MACHINE_SPI_CHECK_FOR_LEGACY_SOFTSPI_CONSTRUCTION(n_args, n_kw, all_args) do { } while (0)
 #endif
 
 #if MICROPY_PY_MACHINE_I2C || MICROPY_PY_MACHINE_SOFTI2C

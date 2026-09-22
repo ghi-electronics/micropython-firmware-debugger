@@ -24,8 +24,12 @@ _user_mpy_start = ORIGIN(USER);
 _user_mpy_end   = ORIGIN(USER) + LENGTH(USER);
 _user_mpy_size  = LENGTH(USER);
 
-/* produce a link error if there is not this amount of RAM for these sections */
-_minimum_stack_size = 2K;
+/* produce a link error if there is not this amount of RAM for these sections.
+ * Stack trimmed from 2K -> 1.5K to make room for peripheral driver state
+ * (SPI/I2C/PWM/Timer/Pin.irq added ~470 bytes .bss/.data) on this 24K-RAM
+ * chip.  Measured MicroPython stack usage on Cortex-M0+ is ~1-1.2K including
+ * USB IRQ nesting, so 1.5K keeps a healthy margin. */
+_minimum_stack_size = 1536;
 _minimum_heap_size = 4K;
 
 _ram_start = ORIGIN(RAM);
