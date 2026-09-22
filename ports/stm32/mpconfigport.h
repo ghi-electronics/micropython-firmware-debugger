@@ -67,7 +67,12 @@
 
 // Python internal features
 #define MICROPY_TRACKED_ALLOC       (MICROPY_SSL_MBEDTLS || MICROPY_BLUETOOTH_BTSTACK)
+// Allow the board to disable the VFS reader (needed for boards with no
+// filesystem that provide their own mp_reader_new_file).  Default kept at 1
+// for every existing board that doesn't override it.
+#ifndef MICROPY_READER_VFS
 #define MICROPY_READER_VFS          (1)
+#endif
 #define MICROPY_ENABLE_GC           (1)
 #define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF (1)
 #define MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE (0)
