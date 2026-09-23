@@ -40,16 +40,44 @@
 #ifndef MICROPY_INCLUDED_ESP32_MPDEBUG_BOARD_H
 #define MICROPY_INCLUDED_ESP32_MPDEBUG_BOARD_H
 
-// Only parts with USB OTG can present a second CDC interface; the rest have a
-// fixed-function USB Serial/JTAG peripheral or no USB device at all.
+// Two transports carry the debug channel to the host.  A board picks one via
+// MICROPY_HW_MPDEBUG_TRANSPORT; the default follows whether the chip has USB
+// OTG (S2/S3/P4) at all.
+//
+//   USB CDC  (default on parts with USB OTG)  -- adds a second CDC interface.
+//   UART     (default on parts without USB, e.g. original ESP32)
+//            -- steals UART0 (or a board-picked UART) so the same USB cable
+//               that goes to the onboard USB-UART bridge carries the debug
+//               protocol.  MicroPython's UART REPL cannot coexist and must
+//               be disabled on the board.
+#define MICROPY_HW_MPDEBUG_TRANSPORT_USB        (0)
+#define MICROPY_HW_MPDEBUG_TRANSPORT_UART       (1)
+
+// Enable the debug engine when either transport is available: USB OTG on
+// its own is enough (that's the historic default), and now boards without
+// USB can opt in via MICROPY_HW_MPDEBUG_TRANSPORT=UART in their config.
+#ifndef MICROPY_HW_MPDEBUG_TRANSPORT
+#if MICROPY_HW_ENABLE_USBDEV
+#define MICROPY_HW_MPDEBUG_TRANSPORT            MICROPY_HW_MPDEBUG_TRANSPORT_USB
+#endif
+#endif
+
 #ifndef MICROPY_HW_MPDEBUG
-#define MICROPY_HW_MPDEBUG (MICROPY_HW_ENABLE_USBDEV)
+#if defined(MICROPY_HW_MPDEBUG_TRANSPORT)
+#define MICROPY_HW_MPDEBUG (1)
+#else
+#define MICROPY_HW_MPDEBUG (0)
+#endif
 #endif
 
 #if MICROPY_HW_MPDEBUG
+#if MICROPY_HW_MPDEBUG_TRANSPORT == MICROPY_HW_MPDEBUG_TRANSPORT_USB
 // Second CDC interface for the source-level debugger.  CDC 0 stays the REPL and
-// behaves exactly as stock; CDC 1 carries the debug protocol.
+// behaves exactly as stock; CDC 1 carries the debug protocol.  Only added on
+// the USB CDC transport -- a UART-transport board has neither USB nor a REPL
+// CDC at all.
 #define MICROPY_HW_USB_CDC_NUM                  (2)
+#endif
 
 // Breakpoint check on the VM per-instruction path.  One flag test while the
 // debugger is idle; the table is only consulted once something is armed.

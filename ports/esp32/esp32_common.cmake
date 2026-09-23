@@ -94,28 +94,6 @@ if(MICROPY_PY_TINYUSB)
         ${MICROPY_DIR}/shared/tinyusb/mp_usbd_runtime.c
     )
 
-    # The source-level debugger.  Gated so a build can genuinely leave it out --
-    # which matters for bisecting a boot problem, and for boards that do not want
-    # it.  Appended to MICROPY_SOURCE_TINYUSB because it needs the debug CDC and
-    # because that list is folded into MICROPY_SOURCE_QSTR below, which is what
-    # gets mpdebug_files.c and mpdebug_vars.c scanned for their
-    # MP_REGISTER_ROOT_POINTER entries.
-    if(NOT DEFINED MICROPY_HW_MPDEBUG)
-        set(MICROPY_HW_MPDEBUG ON)
-    endif()
-    if(MICROPY_HW_MPDEBUG)
-        list(APPEND MICROPY_SOURCE_TINYUSB
-            ${MICROPY_DIR}/shared/mpdebug/mpdebug.c
-            ${MICROPY_DIR}/shared/mpdebug/mpdebug_break.c
-            ${MICROPY_DIR}/shared/mpdebug/mpdebug_files.c
-            ${MICROPY_DIR}/shared/mpdebug/mpdebug_vars.c
-            ${MICROPY_DIR}/shared/mpdebug/wireprotocol.c
-            ${MICROPY_PORT_DIR}/mpdebug_port.c
-        )
-    else()
-        list(APPEND MICROPY_DEF_TINYUSB MICROPY_HW_MPDEBUG=0)
-    endif()
-
     list(APPEND MICROPY_INC_TINYUSB
         ${MICROPY_DIR}/shared/tinyusb/
     )
@@ -127,6 +105,38 @@ if(MICROPY_PY_TINYUSB)
         ${MICROPY_DIR}
         ${MICROPY_PORT_DIR}
         ${MICROPY_BOARD_DIR})
+endif()
+
+# The source-level debugger.  Enabled by default when a USB CDC transport
+# is available (TinyUSB is being built anyway); UART-transport boards --
+# original ESP32 with an onboard USB-to-serial bridge, no TinyUSB -- must
+# opt in by setting MICROPY_HW_MPDEBUG=ON in their mpconfigboard.cmake.
+# That opt-in keeps stock ESP32_GENERIC and every other non-TinyUSB board
+# byte-identical to pre-branch behavior: nothing compiled, no macros
+# defined, no risk of dragging in tusb.h on a build that has none.
+#
+# The sources live in their own MICROPY_SOURCE_MPDEBUG list so a board
+# opting in for UART transport gets them without also pulling in TinyUSB.
+# The list is folded into MICROPY_SOURCE_QSTR below so mpdebug_files.c
+# and mpdebug_vars.c get scanned for their MP_REGISTER_ROOT_POINTER
+# entries; if the list is empty the fold is a no-op.
+if(MICROPY_PY_TINYUSB AND NOT DEFINED MICROPY_HW_MPDEBUG)
+    set(MICROPY_HW_MPDEBUG ON)
+endif()
+if(MICROPY_HW_MPDEBUG)
+    list(APPEND MICROPY_SOURCE_MPDEBUG
+        ${MICROPY_DIR}/shared/mpdebug/mpdebug.c
+        ${MICROPY_DIR}/shared/mpdebug/mpdebug_break.c
+        ${MICROPY_DIR}/shared/mpdebug/mpdebug_files.c
+        ${MICROPY_DIR}/shared/mpdebug/mpdebug_vars.c
+        ${MICROPY_DIR}/shared/mpdebug/wireprotocol.c
+        ${MICROPY_PORT_DIR}/mpdebug_port.c
+    )
+elseif(MICROPY_PY_TINYUSB)
+    # TinyUSB builds have the USB CDC path stub that expects
+    # MICROPY_HW_MPDEBUG to be defined; give it the value.  Non-TinyUSB
+    # builds don't have that stub.
+    list(APPEND MICROPY_DEF_TINYUSB MICROPY_HW_MPDEBUG=0)
 endif()
 
 list(APPEND MICROPY_SOURCE_PORT
@@ -181,6 +191,7 @@ list(APPEND MICROPY_SOURCE_QSTR
     ${MICROPY_SOURCE_PORT}
     ${MICROPY_SOURCE_BOARD}
     ${MICROPY_SOURCE_TINYUSB}
+    ${MICROPY_SOURCE_MPDEBUG}
 )
 
 list(APPEND IDF_COMPONENTS
@@ -253,6 +264,7 @@ idf_component_register(
         ${MICROPY_SOURCE_PORT}
         ${MICROPY_SOURCE_BOARD}
         ${MICROPY_SOURCE_TINYUSB}
+        ${MICROPY_SOURCE_MPDEBUG}
     INCLUDE_DIRS
         ${MICROPY_INC_CORE}
         ${MICROPY_INC_USERMOD}
