@@ -114,7 +114,7 @@ Replug the board. This solves two things at once: user-level access to `/dev/tty
 
 ## Contributing
 
-Bug reports and suggestions for the debugger are welcome — [open an issue](https://github.com/ghi-electronics/micropython-fw-debugger/issues).
+Bug reports and suggestions for the debugger are welcome — [open an issue](https://github.com/ghi-electronics/micropython-firmware-debugger/issues).
 
 For MicroPython core issues unrelated to debugging (interpreter, standard library, other ports), report those upstream at [micropython/micropython](https://github.com/micropython/micropython).
 
