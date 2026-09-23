@@ -79,6 +79,12 @@ volatile bool mp_debug_in_eval = false;
 // even reached" with a number instead of an argument.
 uint32_t mp_debug_vm_hook_calls = 0;
 
+// Default port hook for Monitor_EnterDfu.  Ports without a firmware-update
+// loader keep the default (do nothing); STM32C0 provides a strong override
+// that arms mpy_boot.c and resets into ST's ROM DFU.
+__attribute__((weak)) void mp_debug_port_enter_dfu(void) {
+}
+
 static void mp_debug_send(const wp_packet_t *hdr, const void *payload, uint32_t size) {
     if (!mp_debug_port_link_up()) {
         return;
@@ -139,6 +145,31 @@ static void mp_debug_dispatch(void *ctx, const wp_packet_t *hdr, const uint8_t *
             } else {
                 mp_debug_conditions &= ~MP_DBG_COND_STOPPED;   // let the halt return
             }
+            break;
+        }
+
+        case MP_DBG_CMD_MONITOR_ENTER_DFU: {
+            // Ack before leaving: the USB link is about to drop and any reply
+            // sent after that is lost.  ACK carries no payload -- the caller
+            // just needs to know the request landed before the device vanishes.
+            uint32_t rc = 0;
+            wp_build_reply(r, hdr, WP_FLAG_ACK, &rc, sizeof(rc), &out);
+            mp_debug_send(&out, &rc, sizeof(rc));
+
+            // Flush anything still cached before the reset, mirroring the
+            // reboot path.  A File_Put in flight would otherwise lose its
+            // directory entry across the reset.
+            mp_debug_file_finish_put();
+            mp_debug_port_storage_flush();
+
+            // Let the ACK reach the host before the link drops.
+            mp_hal_delay_us(50000);
+
+            // Ports without a DFU loader keep the weak default and this call
+            // returns; the host times out waiting for the DFU device to appear
+            // and reports it, which is the right shape for that failure.  The
+            // STM32C0 override does not return.
+            mp_debug_port_enter_dfu();
             break;
         }
 

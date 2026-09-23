@@ -205,6 +205,28 @@ void mp_debug_port_reset(void) {
     NVIC_SystemReset();
 }
 
+#if defined(STM32C0)
+// Strong override for STM32C0.  Signals mpy_boot.c to jump to ST's ROM DFU
+// bootloader instead of running the loader window or the user's .mpy on the
+// next boot.  "DF" tag ("DFU") in BKP1R, same 16-bit-safe channel used by the
+// OL/IP signals.  Other STM32 families keep the weak default (no-op) because
+// their ROM DFU is either absent, at a different address, or reached via a
+// separate mechanism, and none of those boards ships with this extension's
+// stm32-dfu flash path enabled.
+void mp_debug_port_enter_dfu(void) {
+    // Same USB detach dance as mp_debug_port_reset: without this the host
+    // holds a stale device handle across the reset and cannot see the ROM
+    // DFU device that comes back.
+    pyb_usb_dev_deinit();
+    mp_hal_delay_us(100000);
+
+    __HAL_RCC_PWR_CLK_ENABLE();
+    PWR->BKP1R = 0x00004644u;   // "DF" -- Enter DFU
+
+    NVIC_SystemReset();
+}
+#endif
+
 // Board hook replacing boardctrl_run_main_py.  Halts before the first bytecode
 // of main.py when the host has asked for it.
 // The three mp_debug_*_main_py calls are the port-neutral part; everything else
