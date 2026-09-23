@@ -190,6 +190,18 @@ void mp_debug_port_reset(void) {
     pyb_usb_dev_deinit();
     mp_hal_delay_us(100000);
 
+    #if defined(STM32C0)
+    // Signal the GHI_STM32C071 mpy_boot loader to open its upload window on
+    // the next boot.  Only the low 16 bits of BKP1R survive an NVIC reset on
+    // STM32C0, so the value fits there ("OL" for Open Loader).  Other STM32
+    // families never check for this value so it is a no-op there; the write
+    // itself is board-neutral because BKP1R is not otherwise used across the
+    // debugger stack.  See ghiboards/GHI_STM32C071/mpy_boot.c for the
+    // matching reader.
+    __HAL_RCC_PWR_CLK_ENABLE();
+    PWR->BKP1R = 0x00004F4Cu;
+    #endif
+
     NVIC_SystemReset();
 }
 
