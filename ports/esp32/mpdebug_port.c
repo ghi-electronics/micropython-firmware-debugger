@@ -29,9 +29,18 @@
  * (shared/mpdebug/mpdebug_port.h).  The engine itself is port-neutral;
  * these ten functions are everything it needs from the chip.
  *
- * Only parts with USB OTG can carry the debug channel -- S2, S3, P4.  The
- * others have either a fixed-function USB Serial/JTAG peripheral or no USB
- * device at all, and cannot present a second CDC interface.
+ * Two transports are available at compile time (selected in
+ * mpdebug_board.h via MICROPY_HW_MPDEBUG_TRANSPORT):
+ *
+ *   USB CDC (S2, S3, P4) -- second CDC interface on the USB OTG peripheral,
+ *                           CDC 1 carries the debug protocol.
+ *   UART    (original ESP32 without native USB) -- steals UART0 (or a
+ *                           board-picked UART) so the same USB cable that
+ *                           reaches the onboard USB-to-serial bridge carries
+ *                           the debug protocol.
+ *
+ * The rest of the port interface (REPL Ctrl-C interception, RTC persist,
+ * storage flush, esp_restart) is transport-neutral and shared.
  */
 
 #include <string.h>
@@ -42,12 +51,15 @@
 #include "esp_system.h"
 #include "esp_attr.h"
 
-#include "tusb.h"
-#include "shared/tinyusb/mp_usbd.h"
 #include "shared/mpdebug/mpdebug.h"
 #include "shared/mpdebug/mpdebug_port.h"
 
 // ---------------------------------------------------------- debug channel ---
+
+#if MICROPY_HW_MPDEBUG_TRANSPORT == MICROPY_HW_MPDEBUG_TRANSPORT_USB
+
+#include "tusb.h"
+#include "shared/tinyusb/mp_usbd.h"
 
 bool mp_debug_port_link_up(void) {
     // Do not touch the USB stack before it exists. Our hooks run from the VM and
@@ -97,6 +109,129 @@ void mp_debug_port_tx_always(const uint8_t *buf, size_t len) {
 bool mp_debug_port_tx_half_empty(void) {
     return tud_cdc_n_write_available(MP_DEBUG_CDC_INDEX) >= (CFG_TUD_CDC_TX_BUFSIZE / 2);
 }
+
+#elif MICROPY_HW_MPDEBUG_TRANSPORT == MICROPY_HW_MPDEBUG_TRANSPORT_UART
+
+// UART transport -- for original ESP32 chips whose only path to the host is
+// a USB-to-serial bridge wired to UART0.  Baud, UART number and buffer sizes
+// are picked in the board's mpconfigboard.h; sensible defaults follow.
+#include "driver/uart.h"
+#include "hal/uart_types.h"
+
+#ifndef MICROPY_HW_MPDEBUG_UART_NUM
+#define MICROPY_HW_MPDEBUG_UART_NUM             (UART_NUM_0)
+#endif
+#ifndef MICROPY_HW_MPDEBUG_UART_BAUD
+#define MICROPY_HW_MPDEBUG_UART_BAUD            (115200)
+#endif
+// The driver's ring buffers.  The RX buffer must be at least twice the UART
+// hardware FIFO, and both need enough room for a maximal MPYDBG1 frame plus a
+// bit of slack so the engine isn't back-pressured on every packet.
+#ifndef MICROPY_HW_MPDEBUG_UART_RX_BUF
+#define MICROPY_HW_MPDEBUG_UART_RX_BUF          (1024)
+#endif
+#ifndef MICROPY_HW_MPDEBUG_UART_TX_BUF
+#define MICROPY_HW_MPDEBUG_UART_TX_BUF          (1024)
+#endif
+
+// Set true once uart_driver_install() has returned successfully.  Guards every
+// hot-path call so the engine's hooks -- which start firing before user code
+// runs -- do not touch an uninstalled driver.
+static bool s_uart_ready = false;
+
+// Lazily install the ESP-IDF UART driver on the first pump.  Idempotent so it
+// is safe to call from every mp_debug_port_link_up().  Doing this from the
+// engine's hot path (rather than a MICROPY_BOARD_EARLY_INIT) means we do not
+// need any board-side plumbing; every UART-transport board benefits the moment
+// it flips MICROPY_HW_MPDEBUG_TRANSPORT to _UART.
+static void uart_lazy_init(void) {
+    uart_config_t cfg = {
+        .baud_rate = MICROPY_HW_MPDEBUG_UART_BAUD,
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .source_clk = UART_SCLK_DEFAULT,
+    };
+    // Any UART driver left over from bootloader / IDF stdio is torn down first
+    // so uart_driver_install() sees a clean peripheral.  A double-install
+    // returns ESP_ERR_INVALID_STATE and we would silently run without a driver.
+    uart_driver_delete(MICROPY_HW_MPDEBUG_UART_NUM);
+    esp_err_t err = uart_driver_install(MICROPY_HW_MPDEBUG_UART_NUM,
+                                        MICROPY_HW_MPDEBUG_UART_RX_BUF,
+                                        MICROPY_HW_MPDEBUG_UART_TX_BUF,
+                                        0, NULL, 0);
+    if (err != ESP_OK) {
+        return;
+    }
+    (void)uart_param_config(MICROPY_HW_MPDEBUG_UART_NUM, &cfg);
+    // Pin defaults come from the SoC's default UART routing; the boards this
+    // transport targets wire the onboard USB bridge to those defaults, so we
+    // deliberately do not call uart_set_pin() here.
+    s_uart_ready = true;
+}
+
+bool mp_debug_port_link_up(void) {
+    if (!s_uart_ready) {
+        uart_lazy_init();
+    }
+    // No enumeration to wait for on UART -- the host is either listening or
+    // not, but the transport itself is "up" the moment the driver is installed.
+    // If the host is not there yet, bytes we write sit in the driver's TX ring
+    // and the OS/bridge chip forwards them once the port is opened.
+    return s_uart_ready;
+}
+
+int mp_debug_port_rx_avail(void) {
+    if (!s_uart_ready) {
+        return 0;
+    }
+    size_t avail = 0;
+    (void)uart_get_buffered_data_len(MICROPY_HW_MPDEBUG_UART_NUM, &avail);
+    return (int)avail;
+}
+
+int mp_debug_port_rx(uint8_t *buf, size_t len) {
+    if (!s_uart_ready) {
+        return 0;
+    }
+    // Non-blocking read: the engine polls in the VM/idle hook and expects to
+    // see whatever is immediately available.  A blocking read here would stall
+    // user code every VM tick when no debugger is attached.
+    int n = uart_read_bytes(MICROPY_HW_MPDEBUG_UART_NUM, buf, len, 0);
+    return n < 0 ? 0 : n;
+}
+
+void mp_debug_port_tx_always(const uint8_t *buf, size_t len) {
+    if (!s_uart_ready) {
+        return;
+    }
+    // uart_write_bytes queues into the driver's TX ring; if it fills, the
+    // call blocks until space frees up.  The ring is sized (TX_BUF above) to
+    // hold a whole MPYDBG1 packet with headroom so the common case is
+    // wait-free.  Unlike USB CDC there is no "host disconnected" signal to
+    // short-circuit on -- the bridge chip stays online across resets --
+    // which is fine: if the host isn't listening, bytes are simply dropped
+    // by the OS-side USB driver, not by us.
+    (void)uart_write_bytes(MICROPY_HW_MPDEBUG_UART_NUM, buf, len);
+}
+
+bool mp_debug_port_tx_half_empty(void) {
+    if (!s_uart_ready) {
+        return false;
+    }
+    // No public API to query TX ring occupancy on ESP-IDF, so report "always
+    // half-empty".  The engine uses this to decide whether to send another
+    // packet immediately or come back on the next hook -- being optimistic
+    // here just means uart_write_bytes may block briefly if the ring fills,
+    // which we accept for now.  Revisit if this becomes a throughput
+    // bottleneck.
+    return true;
+}
+
+#else
+#error "MICROPY_HW_MPDEBUG_TRANSPORT must be MICROPY_HW_MPDEBUG_TRANSPORT_USB or _UART"
+#endif
 
 // ----------------------------------------------------------- REPL channel ---
 

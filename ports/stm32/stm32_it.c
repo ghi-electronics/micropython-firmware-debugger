@@ -315,7 +315,7 @@ void USB_UCPD1_2_IRQHandler(void) {
 }
 #endif
 
-#elif defined(STM32H5)
+#elif defined(STM32C0) || defined(STM32H5)
 
 #if MICROPY_HW_USB_FS
 void USB_DRD_FS_IRQHandler(void) {
@@ -560,7 +560,7 @@ void TAMP_STAMP_IRQHandler(void) {
 }
 #endif
 
-#if !defined(STM32U5)
+#if !defined(STM32U5) && !defined(STM32C0)
 #if defined(STM32H5)
 void RTC_IRQHandler(void)
 #elif defined(STM32N6)
@@ -591,7 +591,7 @@ void RTC_IRQHandler(void) {
 }
 #endif
 
-#if defined(STM32F0) || defined(STM32G0) || defined(STM32L0)
+#if defined(STM32C0) || defined(STM32F0) || defined(STM32G0) || defined(STM32L0)
 
 #if defined(STM32G0)
 void RTC_TAMP_IRQHandler(void) {
@@ -601,6 +601,8 @@ void RTC_TAMP_IRQHandler(void) {
     Handle_EXTI_Irq(EXTI_RTC_TIMESTAMP); // clear EXTI flag and execute optional callback
     IRQ_EXIT(RTC_TAMP_IRQn);
 }
+#elif defined(STM32C0)
+// STM32C0: RTC not enabled in this port (MICROPY_HW_ENABLE_RTC=0).
 #else
 void RTC_IRQHandler(void) {
     IRQ_ENTER(RTC_IRQn);

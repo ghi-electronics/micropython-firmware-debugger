@@ -477,6 +477,7 @@ int mp_debug_eval(const mp_code_state_t *cs, const char *expr, uint32_t expr_len
     val.len = 0;
     int32_t rc = 0;
 
+    #if MICROPY_ENABLE_COMPILER
     if (cs == NULL || cs->fun_bc == NULL || expr_len == 0) {
         rc = MP_DBG_FILE_ERR_BAD_REQUEST;
     } else {
@@ -506,6 +507,15 @@ int mp_debug_eval(const mp_code_state_t *cs, const char *expr, uint32_t expr_len
             rc = MP_DBG_FILE_ERR_FAILED;
         }
     }
+    #else
+    // No on-device compiler: expression evaluation is unavailable.  Host runs
+    // mpy-cross so full source is never on the target.  Report failure with an
+    // empty value so the host can surface "unsupported" in the Watch panel.
+    (void)cs;
+    (void)expr;
+    (void)expr_len;
+    rc = MP_DBG_FILE_ERR_FAILED;
+    #endif
 
     if (buf_max < 6u + val.len) {
         val.len = 0;
@@ -592,10 +602,12 @@ int mp_debug_set_variable(const mp_code_state_t *cs,
     const char *name, uint32_t name_len,
     const char *expr, uint32_t expr_len,
     uint8_t *buf, uint32_t buf_max) {
-    char stmt[192];
     mp_debug_valbuf_t val;
     val.len = 0;
     int32_t rc = 0;
+
+    #if MICROPY_ENABLE_COMPILER
+    char stmt[192];
 
     if (cs == NULL || name_len == 0 || expr_len == 0
         || name_len + expr_len + 4 > sizeof(stmt)) {
@@ -634,6 +646,16 @@ int mp_debug_set_variable(const mp_code_state_t *cs,
             rc = MP_DBG_FILE_ERR_FAILED;
         }
     }
+    #else
+    // No on-device compiler: assignment is implemented as
+    // "<name> = <expr>" compiled and run, which we cannot do.
+    (void)cs;
+    (void)name;
+    (void)name_len;
+    (void)expr;
+    (void)expr_len;
+    rc = MP_DBG_FILE_ERR_FAILED;
+    #endif
 
     if (buf_max < 6u + val.len) {
         val.len = 0;

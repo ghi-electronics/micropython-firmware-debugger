@@ -194,11 +194,6 @@ MPY_CROSS_FLAGS += -march=$(MPY_CROSS_MCU_ARCH)
 
 SHARED_SRC_C += $(addprefix shared/,\
 	libc/string0.c \
-	mpdebug/mpdebug.c \
-	mpdebug/mpdebug_break.c \
-	mpdebug/mpdebug_files.c \
-	mpdebug/mpdebug_vars.c \
-	mpdebug/wireprotocol.c \
 	netutils/dhcpserver.c \
 	netutils/netutils.c \
 	netutils/trace.c \
@@ -216,6 +211,19 @@ SHARED_SRC_C += $(addprefix shared/,\
 	tinyusb/mp_usbd_descriptor.c \
 	tinyusb/mp_usbd_runtime.c \
 	)
+
+# Debugger support (optional). Disabled by boards that set MICROPY_ENABLE_DEBUGGER=0.
+MICROPY_ENABLE_DEBUGGER ?= 1
+ifeq ($(MICROPY_ENABLE_DEBUGGER),1)
+SHARED_SRC_C += $(addprefix shared/,\
+	mpdebug/mpdebug.c \
+	mpdebug/mpdebug_break.c \
+	mpdebug/mpdebug_files.c \
+	mpdebug/mpdebug_vars.c \
+	mpdebug/wireprotocol.c \
+	)
+SRC_C += mpdebug_port.c
+endif
 
 ifeq ($(MICROPY_FLOAT_IMPL),double)
 LIBM_SRC_C += $(SRC_LIB_LIBM_DBL_C)
@@ -241,7 +249,6 @@ DRIVERS_SRC_C += $(addprefix drivers/,\
 	)
 
 SRC_C += \
-	mpdebug_port.c \
 	boardctrl.c \
 	main.c \
 	stm32_it.c \
@@ -315,11 +322,12 @@ SRC_C += \
 	xspi.c \
 	$(wildcard $(BOARD_DIR)/*.c)
 
+
 SRC_O += \
 	$(STARTUP_FILE) \
 	$(SYSTEM_FILE)
 
-ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f0 g0 l0))
+ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),c0 f0 g0 l0))
 CSUPEROPT = -Os # save some code space
 SRC_O += \
 	resethandler_m0.o \
@@ -372,7 +380,7 @@ HAL_SRC_C += $(addprefix $(STM32LIB_HAL_BASE)/Src/stm32$(MCU_SERIES)xx_,\
 	)
 endif
 
-ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f4 f7 g0 g4 h5 h7 l0 l1 l4 n6 u5 wb))
+ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),c0 f4 f7 g0 g4 h5 h7 l0 l1 l4 n6 u5 wb))
 HAL_SRC_C += $(addprefix $(STM32LIB_HAL_BASE)/Src/stm32$(MCU_SERIES)xx_,\
 	hal_pcd.c \
 	hal_pcd_ex.c \
@@ -417,7 +425,7 @@ $(BUILD)/$(STM32LIB_HAL_BASE)/Src/stm32$(MCU_SERIES)xx_hal_mmc.o: CFLAGS += -Wno
 endif
 endif
 
-ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),f4 f7 g0 g4 h5 h7 n6 u5))
+ifeq ($(MCU_SERIES),$(filter $(MCU_SERIES),c0 f4 f7 g0 g4 h5 h7 n6 u5))
 HAL_SRC_C += $(addprefix $(STM32LIB_HAL_BASE)/Src/stm32$(MCU_SERIES)xx_,\
 	hal_dma_ex.c \
 	)

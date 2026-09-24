@@ -26,6 +26,19 @@
 
 /*
  * stm32 implementation of the debug engine's port interface.
+ *
+ * Two flavours live here, selected by CPU family:
+ *
+ *   - Dual-CDC boards (L4, H7, ...): CDC 0 is REPL, CDC 1 is the debugger.
+ *     The REPL getc is used by the halt loop as a Ctrl-C escape hatch when
+ *     nobody has opened the debugger channel.  Persist word lives in
+ *     RTC->BKP31R.  storage_flush() commits the FAT/littlefs write cache.
+ *
+ *   - Single-CDC boards (STM32C0): CDC 0 carries both mpy_boot.c's upload
+ *     window and, once boot completes, the debugger wire protocol.  There
+ *     is no REPL CDC and no filesystem, so repl_getc always returns -1 and
+ *     storage_flush is a no-op.  Persist word lives in PWR->BKPnR because
+ *     the C0 RTC has no BKPxR registers.
  */
 
 #include <string.h>
@@ -39,7 +52,9 @@
 #include "py/mphal.h"
 #include "usb.h"
 #include "boardctrl.h"
+#if MICROPY_HW_ENABLE_STORAGE
 #include "storage.h"
+#endif
 #include "shared/mpdebug/mpdebug.h"
 #include "shared/mpdebug/mpdebug_port.h"
 
@@ -83,6 +98,8 @@ bool mp_debug_port_tx_half_empty(void) {
 }
 
 int mp_debug_port_repl_getc(void) {
+    #if MICROPY_HW_USB_CDC_NUM >= 2
+    // Dual-CDC layout: CDC 0 is the REPL, distinct from MP_DEBUG_CDC_INDEX.
     usbd_cdc_itf_t *repl = usb_vcp_get_cdc_itf(0);
     if (repl == NULL || usbd_cdc_rx_num(repl) <= 0) {
         return -1;
@@ -92,30 +109,51 @@ int mp_debug_port_repl_getc(void) {
         return -1;
     }
     return c;
+    #else
+    // Single-CDC boards share one interface between the debugger wire protocol
+    // and any REPL bytes.  Reading them here would steal frame bytes from the
+    // engine, so we simply have no Ctrl-C escape hatch on those boards -- the
+    // user's way out is to press reset.
+    return -1;
+    #endif
 }
 
 // A hard reset re-zeroes .bss, so the stop-on-start request cannot simply live
-// there if it has to survive one.  Stash it in an RTC backup register instead:
+// there if it has to survive one.  Stash it in a backup register instead:
 // those sit in the backup domain and are cleared only by a backup-domain reset
 // or loss of VBAT, not by a system reset.  Tagged so an unrelated value cannot
 // be mistaken for a request.
+//
+// Register choice differs by family:
+//   - L4/H7/F4 have RTC->BKPxR (up to 32 of them).  We use BKP31R.
+//   - C0 has NO RTC BKPxR at all.  Its backup registers live on PWR (PWR->BKP0R
+//     .. BKP3R), reachable without arming any backup-domain protection bit.
 #define MP_DBG_PERSIST_TAG   (0x4D504400u)   // "MPD" << 8
 #define MP_DBG_PERSIST_MASK  (0xFFFFFF00u)
-#define MP_DBG_PERSIST_REG   (RTC->BKP31R)
 
-static void mp_debug_port_persist_enable(void) {
-    // The backup registers need the RTC APB clock and the backup-domain write
-    // protection lifted.  Neither requires the RTC itself to be running, which
-    // matters when a board keeps MICROPY_HW_ENABLE_RTC = 0.  The macro name
-    // for "APB clock only, not the counter" differs between STM32 families:
-    // L4 has RTCAPB, H7 rolls it into RTC_CLK (sets RTCAPBEN in APB4ENR).
-    #if defined(__HAL_RCC_RTCAPB_CLK_ENABLE)
-    __HAL_RCC_RTCAPB_CLK_ENABLE();
-    #else
-    __HAL_RCC_RTC_CLK_ENABLE();
-    #endif
-    HAL_PWR_EnableBkUpAccess();
-}
+#if defined(STM32C0)
+    // C0: PWR clock must be enabled; there is no backup-domain write protection.
+    #define MP_DBG_PERSIST_REG   (PWR->BKP0R)
+    static void mp_debug_port_persist_enable(void) {
+        __HAL_RCC_PWR_CLK_ENABLE();
+    }
+#else
+    // Everything else: RTC APB clock + backup-domain write access.
+    #define MP_DBG_PERSIST_REG   (RTC->BKP31R)
+    static void mp_debug_port_persist_enable(void) {
+        // The backup registers need the RTC APB clock and the backup-domain write
+        // protection lifted.  Neither requires the RTC itself to be running, which
+        // matters when a board keeps MICROPY_HW_ENABLE_RTC = 0.  The macro name
+        // for "APB clock only, not the counter" differs between STM32 families:
+        // L4 has RTCAPB, H7 rolls it into RTC_CLK (sets RTCAPBEN in APB4ENR).
+        #if defined(__HAL_RCC_RTCAPB_CLK_ENABLE)
+        __HAL_RCC_RTCAPB_CLK_ENABLE();
+        #else
+        __HAL_RCC_RTC_CLK_ENABLE();
+        #endif
+        HAL_PWR_EnableBkUpAccess();
+    }
+#endif
 
 void mp_debug_port_persist_write(uint32_t conditions) {
     mp_debug_port_persist_enable();
@@ -133,7 +171,13 @@ uint32_t mp_debug_port_persist_take(void) {
 }
 
 void mp_debug_port_storage_flush(void) {
+    #if MICROPY_HW_ENABLE_STORAGE
     storage_flush();
+    #else
+    // No filesystem on this board -- there is nothing cached that would need
+    // pushing to the medium.  The .mpy blob our mpy_boot.c writes goes to
+    // flash synchronously.
+    #endif
 }
 
 void mp_debug_port_reset(void) {
@@ -146,8 +190,42 @@ void mp_debug_port_reset(void) {
     pyb_usb_dev_deinit();
     mp_hal_delay_us(100000);
 
+    #if defined(STM32C0)
+    // Signal the GHI_STM32C071 mpy_boot loader to open its upload window on
+    // the next boot.  Only the low 16 bits of BKP1R survive an NVIC reset on
+    // STM32C0, so the value fits there ("OL" for Open Loader).  Other STM32
+    // families never check for this value so it is a no-op there; the write
+    // itself is board-neutral because BKP1R is not otherwise used across the
+    // debugger stack.  See ghiboards/GHI_STM32C071/mpy_boot.c for the
+    // matching reader.
+    __HAL_RCC_PWR_CLK_ENABLE();
+    PWR->BKP1R = 0x00004F4Cu;
+    #endif
+
     NVIC_SystemReset();
 }
+
+#if defined(STM32C0)
+// Strong override for STM32C0.  Signals mpy_boot.c to jump to ST's ROM DFU
+// bootloader instead of running the loader window or the user's .mpy on the
+// next boot.  "DF" tag ("DFU") in BKP1R, same 16-bit-safe channel used by the
+// OL/IP signals.  Other STM32 families keep the weak default (no-op) because
+// their ROM DFU is either absent, at a different address, or reached via a
+// separate mechanism, and none of those boards ships with this extension's
+// stm32-dfu flash path enabled.
+void mp_debug_port_enter_dfu(void) {
+    // Same USB detach dance as mp_debug_port_reset: without this the host
+    // holds a stale device handle across the reset and cannot see the ROM
+    // DFU device that comes back.
+    pyb_usb_dev_deinit();
+    mp_hal_delay_us(100000);
+
+    __HAL_RCC_PWR_CLK_ENABLE();
+    PWR->BKP1R = 0x00004644u;   // "DF" -- Enter DFU
+
+    NVIC_SystemReset();
+}
+#endif
 
 // Board hook replacing boardctrl_run_main_py.  Halts before the first bytecode
 // of main.py when the host has asked for it.

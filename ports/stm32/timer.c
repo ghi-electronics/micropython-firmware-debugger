@@ -394,7 +394,7 @@ uint32_t timer_get_source_freq(uint32_t tim_id) {
     uint32_t source, clk_div;
     if (tim_id == 1 || (8 <= tim_id && tim_id <= 11) || tim_id == 20) {
         // TIM{1,8,9,10,11,20} are on APB2
-        #if defined(STM32F0) || defined(STM32G0)
+        #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0)
         source = HAL_RCC_GetPCLK1Freq();
         clk_div = RCC->CFGR & RCC_CFGR_PPRE;
         #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ)
@@ -413,7 +413,7 @@ uint32_t timer_get_source_freq(uint32_t tim_id) {
     } else {
         // TIM{2,3,4,5,6,7,12,13,14} are on APB1
         source = HAL_RCC_GetPCLK1Freq();
-        #if defined(STM32F0) || defined(STM32G0)
+        #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0)
         clk_div = RCC->CFGR & RCC_CFGR_PPRE;
         #elif defined(STM32H7A3xx) || defined(STM32H7A3xxQ) || defined(STM32H7B3xx) || defined(STM32H7B3xxQ)
         clk_div = RCC->CDCFGR1 & RCC_CDCFGR2_CDPPRE1;
@@ -902,7 +902,7 @@ static mp_obj_t pyb_timer_init_helper(pyb_timer_obj_t *self, size_t n_args, cons
 #define TIM_ENTRY(id, irq) [id - 1] = (uint32_t)TIM##id | irq
 static const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM1)
-    #if defined(STM32F0) || defined(STM32G0)
+    #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0)
     TIM_ENTRY(1, TIM1_BRK_UP_TRG_COM_IRQn),
     #elif defined(STM32F4) || defined(STM32F7)
     TIM_ENTRY(1, TIM1_UP_TIM10_IRQn),
@@ -1005,7 +1005,7 @@ static const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #endif
     #endif
 
-    #if defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32N6)
+    #if defined(STM32C0) || defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32N6)
     TIM_ENTRY(14, TIM14_IRQn),
     #elif defined(TIM14)
     TIM_ENTRY(14, TIM8_TRG_COM_TIM14_IRQn),
@@ -1022,7 +1022,7 @@ static const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM16)
     #if defined(STM32G0B1xx) || defined(STM32G0C1xx)
     TIM_ENTRY(16, TIM16_FDCAN_IT0_IRQn),
-    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32H7) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
+    #elif defined(STM32C0) || defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32H7) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
     TIM_ENTRY(16, TIM16_IRQn),
     #else
     TIM_ENTRY(16, TIM1_UP_TIM16_IRQn),
@@ -1032,7 +1032,7 @@ static const uint32_t tim_instance_table[MICROPY_HW_MAX_TIMER] = {
     #if defined(TIM17)
     #if defined(STM32G0B1xx) || defined(STM32G0C1xx)
     TIM_ENTRY(17, TIM17_FDCAN_IT1_IRQn),
-    #elif defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32H7) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
+    #elif defined(STM32C0) || defined(STM32F0) || defined(STM32G0) || defined(STM32H5) || defined(STM32H7) || defined(STM32N6) || defined(STM32U5) || defined(STM32WL)
     TIM_ENTRY(17, TIM17_IRQn),
     #else
     TIM_ENTRY(17, TIM1_TRG_COM_TIM17_IRQn),

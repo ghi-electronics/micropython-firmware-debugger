@@ -90,4 +90,10 @@ void mp_debug_port_storage_flush(void);
 // comes back, and every subsequent open fails until it is physically replugged.
 void mp_debug_port_reset(void);
 
+// Reboot into the port's firmware-update loader (STM32 ROM DFU, etc).  A weak
+// default in mpdebug.c does nothing so ports that have no such loader can
+// silently ignore the request; the STM32C0 port overrides to arm mpy_boot.c
+// and reset into ST's ROM DFU at 0x1FFF0000.
+void mp_debug_port_enter_dfu(void);
+
 #endif // MICROPY_INCLUDED_MPDEBUG_PORT_H

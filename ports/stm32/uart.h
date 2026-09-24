@@ -110,7 +110,7 @@ void uart_tx_strn(machine_uart_obj_t *uart_obj, const char *str, uint len);
 static inline bool uart_tx_avail(machine_uart_obj_t *self) {
     #if defined(STM32F4) || defined(STM32L1)
     return self->uartx->SR & USART_SR_TXE;
-    #elif defined(STM32G0) || defined(STM32H7) || defined(STM32WL)
+    #elif defined(STM32C0) || defined(STM32G0) || defined(STM32H7) || defined(STM32WL)
     return self->uartx->ISR & USART_ISR_TXE_TXFNF;
     #else
     return self->uartx->ISR & USART_ISR_TXE;

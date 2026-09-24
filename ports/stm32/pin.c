@@ -427,6 +427,11 @@ static mp_obj_t pin_on(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(pin_on_obj, pin_on);
 
+#ifndef MICROPY_HW_ENABLE_PIN_IRQ
+#define MICROPY_HW_ENABLE_PIN_IRQ (1)
+#endif
+
+#if MICROPY_HW_ENABLE_PIN_IRQ
 // pin.irq(handler=None, trigger=IRQ_FALLING|IRQ_RISING, hard=False)
 static mp_obj_t pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_handler, ARG_trigger, ARG_hard };
@@ -449,6 +454,7 @@ static mp_obj_t pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_ar
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(pin_irq_obj, 1, pin_irq);
+#endif
 
 #if MICROPY_PY_MACHINE_PIN_LEGACY
 
@@ -552,7 +558,9 @@ static const mp_rom_map_elem_t pin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_value),   MP_ROM_PTR(&pin_value_obj) },
     { MP_ROM_QSTR(MP_QSTR_off),     MP_ROM_PTR(&pin_off_obj) },
     { MP_ROM_QSTR(MP_QSTR_on),      MP_ROM_PTR(&pin_on_obj) },
+    #if MICROPY_HW_ENABLE_PIN_IRQ
     { MP_ROM_QSTR(MP_QSTR_irq),     MP_ROM_PTR(&pin_irq_obj) },
+    #endif
 
     // Legacy names as used by pyb.Pin
     { MP_ROM_QSTR(MP_QSTR_low),     MP_ROM_PTR(&pin_off_obj) },

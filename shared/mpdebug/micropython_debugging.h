@@ -36,6 +36,11 @@
 #define MP_DBG_CMD_MONITOR_PING         (0x00000000)
 #define MP_DBG_CMD_MONITOR_OUTPUT       (0x00000001)   // device -> host event
 #define MP_DBG_CMD_MONITOR_REBOOT       (0x00000007)
+// Ask the port to leave the running firmware and enter its ROM DFU / update
+// loader on the next boot. Not every port has a DFU path (rp2 uses BOOTSEL,
+// esp32 uses its ROM loader over UART), so the default port hook is a no-op
+// and the host relies on the manifest kind to know when to send this.
+#define MP_DBG_CMD_MONITOR_ENTER_DFU    (0x00000008)
 
 // Ping payload, both directions: { uint32_t source; uint32_t dbg_flags; }
 #define MP_DBG_PING_SOURCE_DEVICE       (0x00000000)
