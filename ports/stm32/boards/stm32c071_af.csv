@@ -1,6 +1,6 @@
 Port ,Pin ,AF0 ,AF1 ,AF2 ,AF3 ,AF4 ,AF5 ,AF6 ,AF7 ,AF8 ,AF9 ,AF10 ,AF11 ,AF12 ,AF13 ,AF14 ,AF15 ,ADC
      ,    ,AF0 ,AF1 ,AF2 ,AF3 ,AF4 ,AF5 ,AF6 ,AF7 ,AF8 ,AF9 ,AF10 ,AF11 ,AF12 ,AF13 ,AF14 ,AF15 ,ADC
-PortA,PA0 ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN0
+PortA,PA0 ,    ,    ,    ,TIM2_CH1,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN0
 PortA,PA1 ,SPI1_SCK,    ,    ,    ,    ,    ,I2C1_SMBA,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN1
 PortA,PA2 ,SPI1_MOSI,USART2_TX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN2
 PortA,PA3 ,    ,USART2_RX,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,    ,ADC1_IN3
