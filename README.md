@@ -1,6 +1,6 @@
 # MicroPython Firmware with Source-Level Debugger
 
-**A [MicroPython](https://github.com/micropython/micropython) fork with real source-level debugging support.** Breakpoints, step, call stack, live variables — driven from VS Code, over a single USB cable, on real microcontroller hardware.
+**A [MicroPython](https://github.com/micropython/micropython) fork with real source-level debugging support.** Breakpoints, step, call stack, live variables — driven from VS Code, over USB CDC or UART, on real microcontroller hardware.
 
 Pairs with the [MicroPython Debugger extension for VS Code](https://github.com/ghi-electronics/micropython-vsc-extension).
 
@@ -11,8 +11,11 @@ Pairs with the [MicroPython Debugger extension for VS Code](https://github.com/g
 This fork adds:
 
 - The `mpdebug` engine (`shared/mpdebug/`) — a debug protocol embedded in MicroPython.
-- Dual-CDC USB support — one channel keeps the standard REPL, the other carries the debug protocol so a host tool can pause the program, set breakpoints and read the stack without disturbing normal `print()` output.
-- Board configurations wired up for the boards we officially support (Raspberry Pi Pico, Pico 2, ESP32-S2, ESP32-S3).
+- Three transport shapes so the same debug engine reaches any board:
+  - **Dual-CDC USB** (Pico, Pico 2, ESP32-S2, ESP32-S3) — one CDC keeps the standard REPL, the other carries the debug protocol.
+  - **Single-CDC USB** (STM32C071) — one CDC carries a boot-time `.mpy` upload window and then the debug protocol; no REPL, for MCUs where 24 KB RAM cannot fit both.
+  - **UART** (original ESP32 through a USB-to-serial bridge) — the debug protocol travels over UART0 at 115200 baud, alongside program output.
+- Board configurations for every board we officially support (Raspberry Pi Pico, Pico 2, ESP32-S2, ESP32-S3, ESP32 UART0, STM32C071).
 
 **Most users don't need to build from source.** Install the [VS Code extension](https://github.com/ghi-electronics/micropython-vsc-extension) — pre-built firmware for common boards is shipped with it, installed on F5. See the extension's README for the current supported-board list.
 
@@ -26,6 +29,7 @@ This repository is for people who want to **build the firmware themselves for a 
 |---|---|
 | **rp2** | CMake ≥ 3.13, GNU Make, `arm-none-eabi-gcc` **12 or newer**, `picotool` **2.3.0**, Python 3 |
 | **esp32** | ESP-IDF **v5.5**, Python 3 (installed with ESP-IDF) |
+| **stm32** | GNU Make, `arm-none-eabi-gcc` **12 or newer**, Python 3 (no `picotool`) |
 
 This fork is based on **MicroPython v1.29.0** — the same version listed in `git describe` on the `dev` branch. Submodule pointers are pinned to what v1.29.0 references, so builds produce the tested toolchain output.
 
@@ -76,21 +80,41 @@ make -C ports/<port> BOARD=<your-board>
 
 **5. Flash** the resulting `firmware.uf2` or `firmware.bin` to your board using the port's standard tool (`picotool`, `esptool.py`, etc.).
 
+### Picking the debug transport for a custom board
+
+The engine ships with three transports; pick one in your board's `mpconfigboard.h`:
+
+- **Dual-CDC USB (default).** Set `MICROPY_HW_USB_CDC_NUM >= 2`. First CDC is the REPL, second carries the debug protocol. No extra knob needed.
+- **Single-CDC USB.** Set `MICROPY_HW_USB_CDC_NUM = 1` and `#define MP_DEBUG_CDC_INDEX 0`. The one CDC carries a boot-time `.mpy` upload window and then the debug protocol. For MCUs where RAM cannot fit both a REPL and the debugger; see `ghiboards/GHI_STM32C071/` for a working example including flash-region layout and boot script.
+- **UART.** Set `#define MICROPY_HW_MPDEBUG_TRANSPORT MICROPY_HW_MPDEBUG_TRANSPORT_UART`. Debug protocol runs over the port's UART0 at 115200 baud; suitable for chips without native USB (original ESP32 via CP2102 / CH340 / FTDI). See `ghiboards/GHI_ESP32_GENERIC_UART0/` for a working configuration.
+
 ## Using your custom firmware with the extension
 
-The VS Code extension auto-detects supported boards by USB VID/PID. It does not know yours, so pin the debug port manually in your project's `.vscode/launch.json`:
+The VS Code extension auto-detects supported boards by USB VID/PID. It does not know yours, so pin the debug port manually in your project's `.vscode/launch.json`.
+
+**Dual-CDC USB board:**
 
 ```jsonc
 {
     "type": "micropython",
     "request": "launch",
-    "name": "MicroPython Deploy and Debug (USB)",
+    "name": "MicroPython Deploy and Debug",
     "program": "${workspaceFolder}/main.py",
     "debugPort": "COM4"       // or "/dev/ttyACM1" on Linux/macOS
 }
 ```
 
 `debugPort` is your board's **second** CDC — the debug channel. It is not the REPL. On Linux, check `ls /dev/serial/by-id/` — the entry ending in `-if02` is the debug channel.
+
+**Single-CDC USB board (STM32C071-style):** same as above, but `debugPort` is the one CDC endpoint the board exposes.
+
+**UART board (original ESP32 through a bridge chip):** add three lines so the extension talks over the bridge port instead of looking for USB CDC:
+
+```jsonc
+"debugPort": "COM3",
+"debugInterface": "uart",
+"debugBaud": 115200
+```
 
 Press **F5** in VS Code.
 
